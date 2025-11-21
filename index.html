@@ -1,0 +1,807 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
+<title>تست شخصیت — حرفه‌ای</title>
+<style>
+  :root{
+    --card-radius:16px;
+    --accent: #2b9cff;
+    --text:#222;
+    --bg-blur: 20px;
+    --container-w:480px;
+  }
+
+  /* پایه */
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    font-family: "Vazirmatn", "Tahoma", Helvetica, Arial, sans-serif;
+    color:var(--text);
+    -webkit-font-smoothing:antialiased;
+    -moz-osx-font-smoothing:grayscale;
+    overflow:auto;
+    min-height:100vh;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    padding:20px;
+    background:#f3f7fb;
+  }
+
+  /* زمینهٔ متحرک همیشگی (زیر لایه‌ها) */
+  .bg-anim {
+    position:fixed; inset:0; z-index:-3;
+    background: linear-gradient(120deg, #a3d8ff 0%, #ffd6e0 50%, #c7ffd8 100%);
+    background-size: 300% 300%;
+    animation: bgFlow 18s linear infinite;
+    filter: blur(8px) saturate(110%);
+    transform: scale(1.05);
+    opacity:0.95;
+  }
+  @keyframes bgFlow {
+    0%{background-position:0% 50%}
+    50%{background-position:100% 50%}
+    100%{background-position:0% 50%}
+  }
+
+  /* دو لایهٔ گرادینت برای فید بین رنگ‌ها */
+  .bg-overlay, .bg-overlay.next {
+    position:fixed; inset:0; z-index:-2;
+    pointer-events:none;
+    transition: opacity 900ms ease;
+  }
+  .bg-overlay{opacity:1}
+  .bg-overlay.next{opacity:0}
+
+  /* کانتینر */
+  .wrap{
+    width:100%;
+    max-width:var(--container-w);
+    margin:0 auto;
+  }
+
+  .card{
+    background:rgba(255,255,255,0.85);
+    backdrop-filter: blur(var(--bg-blur));
+    border-radius:var(--card-radius);
+    box-shadow: 0 10px 30px rgba(20,30,60,0.12);
+    padding:16px;
+    margin-bottom:18px;
+    transition: transform .35s ease, opacity .35s ease;
+  }
+
+  .center {text-align:center}
+
+  h1{margin:6px 0 12px; font-size:20px}
+  p.small{margin:6px 0;color:#555;font-size:13px}
+
+  /* انتخاب تست */
+  .test-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .btn{
+    display:inline-block;
+    padding:12px;
+    border-radius:12px;
+    border:none;
+    cursor:pointer;
+    font-weight:600;
+    background:linear-gradient(180deg,#2b9cff,#1b7fd6);
+    color:#fff;
+    box-shadow:0 6px 16px rgba(43,156,255,0.22);
+    transition: transform .15s ease;
+  }
+  .btn:active{transform:translateY(2px)}
+  .btn.ghost{
+    background:linear-gradient(180deg,#fff,#f7fbff);
+    color:var(--text);
+    border:1px solid #e6eefb;
+    box-shadow:none;
+  }
+
+  /* پرسش و گزینه‌ها */
+  #quizBox .question{
+    font-size:17px;
+    font-weight:700;
+    margin-bottom:14px;
+  }
+  .options{display:flex;flex-direction:column;gap:10px}
+  .option{
+    background:linear-gradient(180deg,#ffffff,#fbfdff);
+    border-radius:12px;
+    padding:12px;
+    cursor:pointer;
+    border:1px solid rgba(20,30,60,0.06);
+    transition: transform .18s ease, box-shadow .18s ease, background .18s;
+    box-shadow:0 6px 18px rgba(16,24,40,0.04);
+    font-weight:600;
+  }
+  .option:hover{transform:translateY(-5px); box-shadow:0 18px 40px rgba(16,24,40,0.08)}
+  .option:active{transform:translateY(0)}
+
+  /* progress */
+  .progressWrap{height:10px;background:linear-gradient(180deg,#fff,#f7fbff);border-radius:999px;overflow:hidden}
+  .progressFill{height:100%;width:0%;background:linear-gradient(90deg,#6fe7c6,#2b9cff);transition:width 450ms ease}
+
+  /* کنترل پایین صفحه */
+  .controls{display:flex;gap:10px;margin-top:12px}
+  .controls .smallBtn{
+    flex:1;padding:10px;border-radius:12px;border:none;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,0.06);cursor:pointer
+  }
+
+  /* صفحهٔ نتیجه */
+  .resultCard{
+    border-radius:16px;padding:18px;color:#fff;
+    text-align:center;
+  }
+  .resultTitle{font-size:20px;font-weight:800}
+  .resultDesc{margin-top:10px;font-size:15px;opacity:0.95}
+
+  /* انیمیشن بین سوال‌ها (fade/slide) */
+  .anim-enter{opacity:0; transform:translateY(12px)}
+  .anim-enter.anim-enter-active{opacity:1; transform:none; transition: all 420ms cubic-bezier(.2,.9,.3,1)}
+  .anim-leave{opacity:1}
+  .anim-leave.anim-leave-active{opacity:0; transform:translateY(-8px); transition: all 320ms cubic-bezier(.2,.9,.3,1)}
+
+  /* پاسخ انتخاب شده */
+  .option.selected{background:linear-gradient(90deg,#effbff,#f0f7ff);border-color:#bfe9ff}
+
+  /* موبایل */
+  @media (max-width:420px){
+    .test-grid{grid-template-columns:1fr; gap:8px}
+    body{padding:14px}
+  }
+</style>
+</head>
+<body>
+
+  <!-- پس‌زمینهٔ متحرک دائمی -->
+  <div class="bg-anim" aria-hidden="true"></div>
+
+  <!-- دو لایه برای فید بین گرادینت‌ها -->
+  <div id="bgLayer" class="bg-overlay" style="background:linear-gradient(120deg, rgba(255,120,120,0.12), rgba(120,180,255,0.18));"></div>
+  <div id="bgNext" class="bg-overlay next" style="background:linear-gradient(120deg, rgba(0,0,0,0.0), rgba(0,0,0,0.0));"></div>
+
+  <div class="wrap">
+
+    <!-- انتخاب تست -->
+    <div id="selectTest" class="card center">
+      <h1>تست شخصیت — چه جور تستی می‌خوای؟</h1>
+      <p class="small">هر تست شامل ۱۰ سؤال است — در پایان نتیجهٔ دقیق و گرافیکی می‌بینی.</p>
+
+      <div class="test-grid" style="margin-top:12px">
+        <button class="btn" onclick="startTest('gaming')">🎮 گیمینگ</button>
+        <button class="btn" onclick="startTest('animal')">🐾 حیوانی</button>
+        <button class="btn" onclick="startTest('color')">🎨 رنگ‌ها</button>
+        <button class="btn" onclick="startTest('fun')">🤣 فان</button>
+      </div>
+
+      <div style="margin-top:14px;display:flex;gap:8px">
+        <button class="btn ghost smallBtn" onclick="loadLast()">🔁 نتیجهٔ قبلی</button>
+        <button class="btn ghost smallBtn" onclick="showHow()">ℹ️ راهنما</button>
+      </div>
+    </div>
+
+    <!-- کادر آزمون -->
+    <div id="quizBox" class="card" style="display:none">
+      <div style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div id="testTitle" style="font-weight:800"></div>
+          <div class="small" id="testSub"></div>
+        </div>
+        <div style="width:40%">
+          <div class="progressWrap" aria-hidden="true">
+            <div id="progressFill" class="progressFill"></div>
+          </div>
+        </div>
+      </div>
+
+      <div id="questionArea" style="margin-top:16px">
+        <div id="questionCard" class="anim-enter anim-enter-active">
+          <div class="question" id="questionText"></div>
+          <div class="options" id="optionsBox"></div>
+        </div>
+      </div>
+
+      <div class="controls">
+        <button class="smallBtn" onclick="goBack()">⬅️ بازگشت</button>
+        <button class="smallBtn" onclick="skipQuestion()">⏭ رد سؤال</button>
+      </div>
+    </div>
+
+    <!-- نتیجه -->
+    <div id="resultBox" class="card" style="display:none">
+      <div id="resultCard" class="resultCard" style="background:linear-gradient(90deg,#2b9cff,#6fe7c6)">
+        <div class="resultTitle" id="resultTitle">🎉 نتیجه</div>
+        <div class="resultDesc" id="resultDesc"></div>
+      </div>
+
+      <div style="margin-top:12px;display:flex;gap:8px">
+        <button class="btn" onclick="shareResult()">📤 کپی نتیجه</button>
+        <button class="btn ghost" onclick="resetAll()">🔄 انجام دوباره</button>
+      </div>
+
+      <p class="small" style="margin-top:10px">نتیجه در مرورگر ذخیره شد — می‌تونی بعداً برگردی و ببینی.</p>
+    </div>
+
+  </div>
+
+<script>
+/* ===========================
+   دیتای تست‌ها (۱۰ سؤال هر کدوم)
+   هر گزینه یک کلید category می‌دهد
+   categories:
+   - gaming: aggressive / strategic / speedy / creative
+   - animal: cat / fox / wolf / lion
+   - color: blue / red / green / yellow
+   - fun: online / sleeper / foodie / survivor
+   =========================== */
+
+const tests = {
+  gaming:{
+    title:"تست شخصیت گیمینگ",
+    sub:"ببین چه نوع پلیر/گیمری هستی",
+    categories:["aggressive","strategic","speedy","creative"],
+    catNames:{
+      aggressive:"پلیر تهاجمی 🔥",
+      strategic:"پلیر استراتژیک 🧠",
+      speedy:"پلیر سرعتی ⚡",
+      creative:"پلیر خلاق 🎨"
+    },
+    questions:[
+      {q:"در مبارزهٔ 1v1 تو چطور بازی می‌کنی؟", a:[
+        {t:"حمله می‌کنم و جلو میرم",c:"aggressive"},
+        {t:"صبر می‌کنم و فرصت‌طلب می‌شم",c:"strategic"},
+        {t:"بازی سرعتی و مچ می‌زنم",c:"speedy"},
+        {t:"حرکت غیرقابل‌پیش‌بینی می‌کنم",c:"creative"}]},
+      {q:"وقتی تیمی بازی می‌کنی نقش مورد علاقه‌ات چیه؟", a:[
+        {t:"جلو، تاپ و فشار",c:"aggressive"},
+        {t:"پلن می‌چینم و هدایت می‌کنم",c:"strategic"},
+        {t:"اسکوانت و فلنک می‌کنم",c:"speedy"},
+        {t:"تجربهٔ عجیب و غریب می‌کنم",c:"creative"}]},
+      {q:"در بازی‌های رقابتی چه چیزی برات مهم‌تره؟", a:[
+        {t:"غلظت اکشن و درگیری",c:"aggressive"},
+        {t:"برد با کمترین اشتباه",c:"strategic"},
+        {t:"شکستن رکورد و سرعت",c:"speedy"},
+        {t:"خلاقیت تو بازی‌کردن",c:"creative"}]},
+      {q:"برای یادگیری یک بازی جدید چه می‌کنی؟", a:[
+        {t:"فقط وارد می‌شم و تجربه می‌کنم",c:"aggressive"},
+        {t:"راهنما میخونم و متد یاد می‌گیرم",c:"strategic"},
+        {t:"با رکوردزنی و تمرین سریع یاد می‌گیرم",c:"speedy"},
+        {t:"تکنیک‌هامو منحصر به فرد می‌کنم",c:"creative"}]},
+      {q:"در مقابل باخت واکنشت چیه؟", a:[
+        {t:"فوراً می‌زنم جلو برای ریونج",c:"aggressive"},
+        {t:"می‌نشینم تحلیل می‌کنم",c:"strategic"},
+        {t:"سریع بازی بعدی رو میزنم",c:"speedy"},
+        {t:"راه متفاوتی امتحان می‌کنم",c:"creative"}]},
+      {q:"در انتخاب وسایل/اسلحه چه معیار داری؟", a:[
+        {t:"قدرت خام و خسارت بالا",c:"aggressive"},
+        {t:"هماهنگی با پلن و تیم",c:"strategic"},
+        {t:"سرعت و موبایل بودن",c:"speedy"},
+        {t:"ظاهر و امتیازات غیرمعمول",c:"creative"}]},
+      {q:"در مسابقات آنلاین ترجیح میدی چی باشی؟", a:[
+        {t:"بازیکن فشاردهنده",c:"aggressive"},
+        {t:"کاپیتان تیم",c:"strategic"},
+        {t:"رنک‌بوستر سرعتی",c:"speedy"},
+        {t:"بازیکن خلاق که همه رو غافلگیر می‌کنه",c:"creative"}]},
+      {q:"چه نوع تجربه‌ای تو بازی دنبال می‌کنی؟", a:[
+        {t:"حاد و درگیری زیاد",c:"aggressive"},
+        {t:"برد هوشمندانه",c:"strategic"},
+        {t:"سرعت و آدرنالین",c:"speedy"},
+        {t:"آزادی خلاقانه",c:"creative"}]},
+      {q:"وقتی تیم ضعیفه تو؟", a:[
+        {t:"خودمو نشون میدم و فشار می‌دم",c:"aggressive"},
+        {t:"پلن میدم تا کمبودها جبران بشه",c:"strategic"},
+        {t:"سریع عمل می‌کنم تا اوضاع رو عوض کنم",c:"speedy"},
+        {t:"تجربهٔ جدید امتحان می‌کنم",c:"creative"}]},
+      {q:"در بازی‌سازی (گیم دیزاین) بیشتر به چی علاقه داری؟", a:[
+        {t:"مکانیک‌ هیجان‌انگیز و جنگی",c:"aggressive"},
+        {t:"سیستم‌های عمیق و متعادل",c:"strategic"},
+        {t:"مکانیک‌های پویای سرعتی",c:"speedy"},
+        {t:"ایده‌های نوآورانه و هنری",c:"creative"}]},
+    ]
+  },
+
+  animal:{
+    title:"تست شخصیت حیوانی",
+    sub:"کدوم حیوان بیشترین شباهت به شخصیت تو داره؟",
+    categories:["cat","fox","wolf","lion"],
+    catNames:{
+      cat:"🐱 گربه",
+      fox:"🦊 روباه",
+      wolf:"🐺 گرگ",
+      lion:"🦁 شیر"
+    },
+    questions:[
+      {q:"در جمع بیشتر چطور رفتار می‌کنی؟", a:[
+        {t:"آرام و مرموز",c:"cat"},
+        {t:"زیرک و باهوش",c:"fox"},
+        {t:"وفادار و پیوسته",c:"wolf"},
+        {t:"رهبر و مقتدر",c:"lion"}]},
+      {q:"تفریح مورد علاقه‌ات چیه؟", a:[
+        {t:"آرامش و لم دادن",c:"cat"},
+        {t:"کشف کردن چیزها",c:"fox"},
+        {t:"دوستی و اجتماع",c:"wolf"},
+        {t:"چالش و تسلط",c:"lion"}]},
+      {q:"در مواجهه با خطر؟", a:[
+        {t:"کم‌کاری می‌کنم و مراقبم",c:"cat"},
+        {t:"خلاقانه فرار یا حل می‌کنم",c:"fox"},
+        {t:"کنار گروه می‌جنگم",c:"wolf"},
+        {t:"مستقیم مقابله می‌کنم",c:"lion"}]},
+      {q:"دوستی برای تو یعنی؟", a:[
+        {t:"همراهی آرام",c:"cat"},
+        {t:"هم‌پیمانی زیرک",c:"fox"},
+        {t:"وفاداری تا آخر",c:"wolf"},
+        {t:"پشتیبانی و چشم هم‌چشمی",c:"lion"}]},
+      {q:"در تصمیم‌گیری؟", a:[
+        {t:"احساسی و با فاصله",c:"cat"},
+        {t:"آنالیز و ناپیش‌بینی",c:"fox"},
+        {t:"با مشورت گروه",c:"wolf"},
+        {t:"قاطع و سریع",c:"lion"}]},
+      {q:"در خانه چه‌کاره‌ای؟", a:[
+        {t:"آرام و راحت",c:"cat"},
+        {t:"کنجکاو و بازیگوش",c:"fox"},
+        {t:"متکی و مراقب",c:"wolf"},
+        {t:"صاحب‌خانهٔ قدرتمند",c:"lion"}]},
+      {q:"هنگام موفقیت چه واکنشی داری؟", a:[
+        {t:"سکوت شیرین",c:"cat"},
+        {t:"باهوشانه جشن می‌گیرم",c:"fox"},
+        {t:"با تیم خوشحالم",c:"wolf"},
+        {t:"با غرور جلوه می‌کنم",c:"lion"}]},
+      {q:"در برابر تغییر چطور هستی؟", a:[
+        {t:"آهسته قبول می‌کنم",c:"cat"},
+        {t:"سازگار و سریع",c:"fox"},
+        {t:"با حمایت دیگران",c:"wolf"},
+        {t:"خوش‌آمدید تغییر",c:"lion"}]},
+      {q:"تعریف شجاعت از نظر تو؟", a:[
+        {t:"اعتماد به خود",c:"cat"},
+        {t:"هوش و ترفند",c:"fox"},
+        {t:"همراهی و اتحاد",c:"wolf"},
+        {t:"دست زدن به خطر",c:"lion"}]},
+      {q:"کدام ویژگی بیشتر بهت می‌خوره؟", a:[
+        {t:"باهوش در عقب‌نشینی",c:"cat"},
+        {t:"زیرکی",c:"fox"},
+        {t:"وفاداری",c:"wolf"},
+        {t:"رهبری",c:"lion"}]},
+    ]
+  },
+
+  color:{
+    title:"تست شخصیت رنگ‌ها",
+    sub:"رنگ تو چه چیزهایی را می‌گوید؟",
+    categories:["blue","red","green","yellow"],
+    catNames:{
+      blue:"آبی — آرام و منطقی 💙",
+      red:"قرمز — پر انرژی ❤️",
+      green:"سبز — مهربان و پایدار 💚",
+      yellow:"زرد — خلاق و خوشحال 💛"
+    },
+    questions:[
+      {q:"وقتی استرسی، چه کاری می‌کنی؟", a:[
+        {t:"آرام نفس می‌کشم",c:"blue"},
+        {t:"فعال می‌شم و انرژی می‌ذارم",c:"red"},
+        {t:"بحث می‌کنم یا پشتیبانی می‌گیرم",c:"green"},
+        {t:"یه چیزی طنزگونه می‌سازم",c:"yellow"}]},
+      {q:"روز تعطیل ایده‌آل؟", a:[
+        {t:"کتاب و آرامش",c:"blue"},
+        {t:"تفریحات هیجانی",c:"red"},
+        {t:"پیک‌نیک با دوستان",c:"green"},
+        {t:"پروژهٔ خلاقانه",c:"yellow"}]},
+      {q:"در مواجهه با نظر مخالف؟", a:[
+        {t:"با منطق جواب میدم",c:"blue"},
+        {t:"دفاعیه و پراحساس می‌شم",c:"red"},
+        {t:"می‌کوشم تفاهم ایجاد کنم",c:"green"},
+        {t:"موضوع رو کمرنگ می‌کنم با شوخی",c:"yellow"}]},
+      {q:"وقتی خوشحالی چه می‌کنی؟", a:[
+        {t:"درون‌گرایانه شاد می‌شم",c:"blue"},
+        {t:"سر به فلک کشیده خوشحالم",c:"red"},
+        {t:"با دیگران شریک می‌شم",c:"green"},
+        {t:"خلاقیت نشون میدم",c:"yellow"}]},
+      {q:"کدام فعالیت تو را راضی می‌کند؟", a:[
+        {t:"تحقیق و یادگیری",c:"blue"},
+        {t:"چالش فیزیکی",c:"red"},
+        {t:"کمک به دیگران",c:"green"},
+        {t:"خلق آثار جدید",c:"yellow"}]},
+      {q:"انتخاب تعطیلات؟", a:[
+        {t:"سفر آرام کنار دریا",c:"blue"},
+        {t:"سفر ماجراجویانه",c:"red"},
+        {t:"طبیعت و جنگل",c:"green"},
+        {t:"یک تور هنری",c:"yellow"}]},
+      {q:"چه هدیه‌ای بهتره برات؟", a:[
+        {t:"چیزی کاربردی",c:"blue"},
+        {t:"هیجان‌انگیز",c:"red"},
+        {t:"طبیعی و ساده",c:"green"},
+        {t:"خلاقانه و بامزه",c:"yellow"}]},
+      {q:"در تیم نقش تو چیه؟", a:[
+        {t:"تحلیل‌گر",c:"blue"},
+        {t:"موتور انرژی",c:"red"},
+        {t:"هماهنگ‌کننده",c:"green"},
+        {t:"ایده‌پرداز",c:"yellow"}]},
+      {q:"فارغ از شرایط، کدوم برات جذابه؟", a:[
+        {t:"ثبات",c:"blue"},
+        {t:"هیجان",c:"red"},
+        {t:"هماهنگی",c:"green"},
+        {t:"نوآوری",c:"yellow"}]},
+      {q:"در پایان روز چه حسی می‌خوای؟", a:[
+        {t:"آرامش",c:"blue"},
+        {t:"انگیزه‌مند",c:"red"},
+        {t:"گرما و دوستی",c:"green"},
+        {t:"شاد و الهام‌گرفته",c:"yellow"}]},
+    ]
+  },
+
+  fun:{
+    title:"تست شخصیت فان",
+    sub:"پاسخ‌ها بامزه و نتیجه‌ها خنده‌دار هستند",
+    categories:["online","sleeper","foodie","survivor"],
+    catNames:{
+      online:"انسان آنلاین 📱",
+      sleeper:"قهرمان خواب 😴",
+      foodie:"خوراکی‌پرست 🥣",
+      survivor:"فقط زنده‌ام 😂"
+    },
+    questions:[
+      {q:"اولین کاری که صبح می‌کنی چیه؟", a:[
+        {t:"گوشی رو چک می‌کنم",c:"online"},
+        {t:"نمی‌خوام بیدار شم",c:"sleeper"},
+        {t:"صبحونه می‌خورم",c:"foodie"},
+        {t:"فقط تلاش می‌کنم از تخت بلند شم",c:"survivor"}]},
+      {q:"نوشیدنی مورد علاقه؟", a:[
+        {t:"قهوه و نوتیفیکیشن",c:"online"},
+        {t:"هرچیزی که خوابمو تضمین کنه",c:"sleeper"},
+        {t:"شیرینی و دسر",c:"foodie"},
+        {t:"هر چیزی که سریع آماده بشه",c:"survivor"}]},
+      {q:"برای بیرون رفتن اول چی می‌پوشی؟", a:[
+        {t:"لباس مناسب برای عکس گرفتن",c:"online"},
+        {t:"هرچی راحت باشه",c:"sleeper"},
+        {t:"تمیز و خوشبو",c:"foodie"},
+        {t:"راحت و زود‌پوش",c:"survivor"}]},
+      {q:"تفریح آخر هفته؟", a:[
+        {t:"وبگردی و گشت‌وگذار",c:"online"},
+        {t:"خواب طولانی",c:"sleeper"},
+        {t:"خوردن فست‌فودهای مختلف",c:"foodie"},
+        {t:"یک ماجراجویی ساده",c:"survivor"}]},
+      {q:"وقتی گرسنه می‌شی؟", a:[
+        {t:"به دنبال عکس‌های غذا در اینستا",c:"online"},
+        {t:"نمی‌فهمم کی گرسنه شدم",c:"sleeper"},
+        {t:"پلان غذا تهیه می‌کنم",c:"foodie"},
+        {t:"هر چی دم دست باشه می‌خورم",c:"survivor"}]},
+      {q:"در جمع حرف اول رو می‌زنی؟", a:[
+        {t:"با استوری و محتوا",c:"online"},
+        {t:"نیم‌خواب و گوشه‌گیر",c:"sleeper"},
+        {t:"در مورد غذاها حرف می‌زنم",c:"foodie"},
+        {t:"صرفاً حضور دارم",c:"survivor"}]},
+      {q:"واکنشت به شوخی؟", a:[
+        {t:"میم می‌فرستم",c:"online"},
+        {t:"ممکنه نخندم و خوابم ببره",c:"sleeper"},
+        {t:"با غذا جایزه میدم",c:"foodie"},
+        {t:"لقب جدید می‌گیرم",c:"survivor"}]},
+      {q:"شب قبل از خواب؟", a:[
+        {t:"تا دیروقت آنلاینم",c:"online"},
+        {t:"زود می‌خوابم",c:"sleeper"},
+        {t:"برنامهٔ غذایی فردا رو چک می‌کنم",c:"foodie"},
+        {t:"فقط امیدوارم فردا بهتر باشه",c:"survivor"}]},
+      {q:"استرس چجوری رفع می‌کنی؟", a:[
+        {t:"چَک کردن فیدها",c:"online"},
+        {t:"چرت کوتاه",c:"sleeper"},
+        {t:"یک وعده خوب",c:"foodie"},
+        {t:"خلاصه و سریع ازش می‌گذرم",c:"survivor"}]},
+      {q:"وقتی کسی می‌پرسه روحیاتت چیه؟", a:[
+        {t:"حاضر به اشتراک گذاری آنلاین",c:"online"},
+        {t:"به خواب فکر می‌کنم",c:"sleeper"},
+        {t:"به غذا فکر می‌کنم",c:"foodie"},
+        {t:"فقط می‌خوام زنده بمونم",c:"survivor"}]},
+    ]
+  }
+};
+
+/* ===== وضعیت جاری ===== */
+let currentTestKey = null;
+let currentIndex = 0;
+let answers = []; // array of category keys
+let scores = {}; // tally
+let currentGradient = ''; // نگهدارندهٔ گرادینت فعلی
+
+/* ============ helper: gradient palettes برای هر تست و بین سوال‌ها =========== */
+const gradientPalettes = {
+  gaming:[ ['#0f2027','#203a43','#2c5364'], ['#1f4037','#99f2c8'], ['#232526','#414345'], ['#4b6cb7','#182848'] ],
+  animal:[ ['#f7b733','#fc4a1a'], ['#00b09b','#96c93d'], ['#6441a5','#2a0845'], ['#c0c0aa','#1cefff'] ],
+  color:[ ['#2193b0','#6dd5ed'], ['#ee9ca7','#ffdde1'], ['#43e97b','#38f9d7'], ['#f7971e','#ffd200'] ],
+  fun:[ ['#ff9a9e','#fad0c4'], ['#a18cd1','#fbc2eb'], ['#fbc2eb','#a6c1ee'], ['#fddb92','#d1fdff'] ],
+  misc:[ ['#a18cd1','#fbc2eb'], ['#89f7fe','#66a6ff'], ['#ff9a9e','#fecfef'], ['#f6d365','#fda085'] ]
+};
+
+function randPalette(key){
+  const arr = gradientPalettes[key] || gradientPalettes.misc;
+  return arr[Math.floor(Math.random()*arr.length)];
+}
+
+/* ============ UI functions ============ */
+
+function startTest(key){
+  currentTestKey = key;
+  currentIndex = 0;
+  answers = [];
+  scores = {};
+  const test = tests[key];
+  document.getElementById('selectTest').style.display='none';
+  document.getElementById('resultBox').style.display='none';
+  document.getElementById('quizBox').style.display='block';
+  document.getElementById('testTitle').textContent = test.title;
+  document.getElementById('testSub').textContent = test.sub;
+  // set an initial background gradient relevant to test
+  changeBackgroundSmooth(randPalette(key));
+  showQuestion(0);
+  updateProgress();
+}
+
+function showQuestion(i){
+  const test = tests[currentTestKey];
+  const q = test.questions[i];
+  const qText = document.getElementById('questionText');
+  const optsBox = document.getElementById('optionsBox');
+
+  // animate question swap
+  const qc = document.getElementById('questionCard');
+  qc.className='anim-leave anim-leave-active';
+  setTimeout(()=>{ // after leave
+    qText.textContent = q.q;
+    optsBox.innerHTML='';
+    q.a.forEach((opt, idx)=>{
+      const d = document.createElement('div');
+      d.className='option';
+      d.tabIndex = 0;
+      d.textContent = opt.t;
+      d.onclick = ()=>selectOption(opt.c, d);
+      d.onkeypress = (e)=>{ if(e.key==='Enter') selectOption(opt.c,d) };
+      optsBox.appendChild(d);
+    });
+    qc.className='anim-enter anim-enter-active';
+    // change background palette for this question (gentle fade)
+    changeBackgroundSmooth(randPalette(currentTestKey));
+  }, 220);
+}
+
+function selectOption(cat, elem){
+  // mark selection visually briefly
+  const opts = document.querySelectorAll('.option');
+  opts.forEach(x=>x.classList.remove('selected'));
+  elem.classList.add('selected');
+
+  // store answer & update scores
+  answers[currentIndex] = cat;
+  // tally immediately (we'll recalc on showResult)
+  incrementScore(cat);
+
+  // small delay برای دیدن افکت، سپس رفتن به سوال بعد
+  setTimeout(()=>{
+    currentIndex++;
+    updateProgress();
+    if(currentIndex < tests[currentTestKey].questions.length){
+      showQuestion(currentIndex);
+    } else {
+      showResult();
+    }
+  }, 420);
+}
+
+function incrementScore(cat){
+  if(!scores[cat]) scores[cat]=0;
+  scores[cat]++;
+}
+
+function updateProgress(){
+  const total = tests[currentTestKey].questions.length;
+  const percent = Math.round((currentIndex/total)*100);
+  document.getElementById('progressFill').style.width = percent + '%';
+}
+
+/* back & skip */
+function goBack(){
+  if(currentIndex===0){
+    // show selection
+    resetAll();
+    return;
+  }
+  // remove last answer
+  currentIndex = Math.max(0, currentIndex-1);
+  const last = answers[currentIndex];
+  if(last){
+    scores[last] = Math.max(0, (scores[last]||0)-1);
+    answers[currentIndex]=null;
+  }
+  updateProgress();
+  showQuestion(currentIndex);
+}
+
+function skipQuestion(){
+  // skip without answering (counts as none)
+  currentIndex++;
+  updateProgress();
+  if(currentIndex < tests[currentTestKey].questions.length){
+    showQuestion(currentIndex);
+  } else showResult();
+}
+
+/* ============ نتیجه‌گیری و ذخیره در localStorage ============ */
+function showResult(){
+  // ensure progress shows 100%
+  document.getElementById('progressFill').style.width = '100%';
+  // compute top category
+  const test = tests[currentTestKey];
+  // if scores empty (all skipped) pick random
+  if(Object.keys(scores).length===0){
+    // random pick from categories
+    const arr = test.categories;
+    const pick = arr[Math.floor(Math.random()*arr.length)];
+    scores[pick] = 1;
+  }
+  // find max score
+  let maxScore = -1;
+  let winners = [];
+  for(const k of test.categories){
+    const s = scores[k] || 0;
+    if(s > maxScore){ maxScore = s; winners=[k]; }
+    else if(s === maxScore){ winners.push(k); }
+  }
+  // tie-breaker: random among winners
+  const finalKey = winners[Math.floor(Math.random()*winners.length)];
+  const title = (test.catNames && test.catNames[finalKey]) ? test.catNames[finalKey] : finalKey;
+  // description generation (custom messages)
+  const desc = generateDescription(currentTestKey, finalKey, maxScore);
+
+  // style the result card with a palette based on finalKey
+  const palette = randPalette(currentTestKey);
+  const g = `linear-gradient(90deg, ${palette[0]}, ${palette[1] || palette[0]})`;
+  const rCard = document.getElementById('resultCard');
+  rCard.style.background = g;
+
+  document.getElementById('resultTitle').textContent = title;
+  document.getElementById('resultDesc').textContent = desc;
+
+  // hide quiz, show result
+  document.getElementById('quizBox').style.display='none';
+  document.getElementById('resultBox').style.display='block';
+
+  // save to localStorage
+  const entry = {
+    test: currentTestKey,
+    resultKey: finalKey,
+    resultTitle: title,
+    desc,
+    timestamp: new Date().toISOString(),
+    scores
+  };
+  try{
+    const prev = JSON.parse(localStorage.getItem('p_test_results')||'[]');
+    prev.unshift(entry);
+    localStorage.setItem('p_test_results', JSON.stringify(prev.slice(0,20)));
+  }catch(e){
+    console.warn('localStorage issue',e);
+  }
+}
+
+/* generate human description based on test and key */
+function generateDescription(testKey, key, score){
+  const t = tests[testKey];
+  // friendly messages per category
+  const map = {
+    gaming:{
+      aggressive:"تو اهل ریسک و فشار آوردنی — خیلی خوبه که اکشن رو دوست داری. تو معمولاً رهبر حمله‌ای تیمی می‌شی.",
+      strategic:"تو پلیر استراتژیک هستی؛ فکر می‌کنی جلوتر و برنامه‌ریزی‌تری. تیم‌ها به برنامه‌هات اعتماد می‌کنن.",
+      speedy:"سرعت با توست؛ واکنش‌هات سریع و تصمیم‌گیری آنی‌ات عالیه. رکورد و زمان‌بندی دست توعه.",
+      creative:"خلاق و غیرقابل‌پیش‌بینی‌ای — همیشه راه‌حل‌های نوآور پیدا می‌کنی."
+    },
+    animal:{
+      cat:"تو یک گربهٔ باوقار هستی — مستقل، آرام و مرموز.",
+      fox:"روباه زیرکه؛ اهل ترفند و ایده‌های هوشمندانه‌ای.",
+      wolf:"گرگ وفاداری؛ همراه گروه بودن و محافظت برات مهمه.",
+      lion:"شیر مقتدری؛ توان رهبری و اعتماد به نفس بالایی داری."
+    },
+    color:{
+      blue:"آرام و منطقی. تو دوست داری با ثبات باشی و تصمیم‌ها رو با تحلیل بگیری.",
+      red:"پرانرژی و شجاع. دوست داری در مرکز توجه باشی و هیجان رو تجربه کنی.",
+      green:"مهربان و حمایتگر. آرامش و پایداری تو شخصیتی‌ته.",
+      yellow:"خلاق و شاد. انرژی مثبت و ایده‌های بکر از ویژگی‌هاتن."
+    },
+    fun:{
+      online:"تو یک انسان آنلاین هستی — همیشه آپدیت و دنبال محتوا!",
+      sleeper:"قهرمان خواب! استراحت جزئی از هویتته.",
+      foodie:"خوراکی‌پرست حرفه‌ای — غذاها معنای زندگی‌ات رو عوض می‌کنن.",
+      survivor:"فقط زنده‌ام — ساده، چابک و عمل‌گرا."
+    }
+  };
+
+  const base = (map[testKey] && map[testKey][key]) ? map[testKey][key] : 'تو شخصیتی منحصربه‌فرد داری!';
+  return `${base} (${score} امتیاز از انتخاب‌ها).`;
+}
+
+/* share result — کپی متن در کلیپ‌بورد */
+function shareResult(){
+  const title = document.getElementById('resultTitle').textContent;
+  const desc = document.getElementById('resultDesc').textContent;
+  const txt = `نتیجهٔ تست: ${title}\n${desc}\nبا اپ تست شخصیت.`;
+  navigator.clipboard?.writeText(txt).then(()=>{
+    alert('نتیجه کپی شد — الان می‌تونی در چت یا استوری بچسبونی!');
+  }).catch(()=>{ alert('کپی موفق نبود؛ لطفاً دستی کپی کن.') });
+}
+
+/* reset */
+function resetAll(){
+  currentTestKey = null;
+  currentIndex = 0;
+  answers = [];
+  scores = {};
+  document.getElementById('quizBox').style.display='none';
+  document.getElementById('resultBox').style.display='none';
+  document.getElementById('selectTest').style.display='block';
+  // reset background to smooth palette
+  changeBackgroundSmooth(randPalette('misc'));
+}
+
+/* load last result from localStorage */
+function loadLast(){
+  const prev = JSON.parse(localStorage.getItem('p_test_results')||'[]');
+  if(!prev || prev.length===0){ alert('نتیجه‌ای در حافظهٔ مرورگر یافت نشد.'); return; }
+  const last = prev[0];
+  // set UI to show last result
+  currentTestKey = last.test;
+  document.getElementById('selectTest').style.display='none';
+  document.getElementById('quizBox').style.display='none';
+  document.getElementById('resultBox').style.display='block';
+  document.getElementById('resultTitle').textContent = last.resultTitle;
+  document.getElementById('resultDesc').textContent = last.desc;
+  // style
+  const palette = randPalette(last.test);
+  document.getElementById('resultCard').style.background = `linear-gradient(90deg, ${palette[0]}, ${palette[1]||palette[0]})`;
+  // adjust background a bit
+  changeBackgroundSmooth(randPalette(last.test));
+}
+
+/* show small help */
+function showHow(){
+  alert('راهنما:\n- هر تست 10 سوال دارد.\n- پس از انتخاب گزینه، به سوال بعد می‌روی.\n- نتیجه در مرورگر ذخیره می‌شود.\n- هر گونه کپی برداری پیگرد قانونی دارد.');
+}
+
+/* ============ پس‌زمینه: تغییر نرم بین گرادینت‌ها ============ */
+/* مکانیزم: bgLayer نمایشگر فعلی؛ bgNext نمایش‌دهندهٔ بعدی با opacity از 0->1؛ سپس swap */
+const bgLayer = document.getElementById('bgLayer');
+const bgNext = document.getElementById('bgNext');
+
+function makeGradientCSS(pair){
+  // pair می‌تواند آرایه دو رنگ یا یک رنگ باشه
+  if(!pair) pair = ['#a3d8ff','#ffd6e0'];
+  const [a,b] = pair;
+  return `linear-gradient(120deg, ${a}, ${b})`;
+}
+
+let bgFadeLock = false;
+function changeBackgroundSmooth(pair){
+  if(!pair) pair = randPalette('misc');
+  // اگر قفل شده، سریع اعمال کن اما بدون fade
+  const css = makeGradientCSS(pair);
+  if(bgFadeLock) { bgLayer.style.background = css; return; }
+  // قرار دادن در لایهٔ بعدی و fade کردن opacity
+  bgNext.style.background = css;
+  bgNext.style.opacity = 0;
+  // force reflow
+  void bgNext.offsetWidth;
+  bgNext.style.transition = 'opacity 900ms ease';
+  bgNext.style.opacity = 1;
+  // پس از پایان انیمیشن swap لایه‌ها
+  setTimeout(()=>{
+    bgLayer.style.background = css;
+    bgNext.style.opacity = 0;
+    bgNext.style.transition = '';
+  }, 920);
+}
+
+/* init small: set a soft initial gradient */
+(function init(){
+  changeBackgroundSmooth(randPalette('misc'));
+})();
+
+</script>
+</body>
+</html>
