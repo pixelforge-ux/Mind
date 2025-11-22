@@ -467,7 +467,7 @@ function resetAll(){ current={sport:null,level:null,index:0,answers:[]}; documen
 function loadLast(){ try{ const prev = JSON.parse(localStorage.getItem('sport_test_results')||'[]'); if(!prev.length){ alert('نتیجه‌ای ذخیره نشده.'); return; } const last = prev[0]; current.sport = last.sport; current.level = last.level; const palette = randPalette(current.sport); document.getElementById('resultCard').style.background = `linear-gradient(90deg, ${palette[0]}, ${palette[1]||palette[0]})`; elems.resultTitle.textContent = `${sports[current.sport].title} — (نتیجه قبلی)`; elems.resultDesc.textContent = `درصد آشنایی: ${last.percent}% — امتیاز ${last.points} از ${last.maxPoints}`; elems.resultExtra.textContent = resultAdvice(current.sport, last.percent); showPage('result'); changeBackgroundSmooth(randPalette(current.sport)); }catch(e){alert('مشکل در خواندن حافظهٔ محلی');console.warn(e)} }
 
 /* راهنما */
-function showHelp(){ alert('راهنما:\\n- هر تست شامل ۱۰ سوال است.\\n- هر گزینه امتیازی بین 0 تا 3 دارد (3 بهترین).\\n- پس از پایان درصد آشنایی نمایش داده و ذخیره می‌شود.'); }
+function showHelp(){ alert('هر تست ۱۰ سوال دارد|هر تست ۳۰ امتیاز دارد.'); }
 
 /* init background */
 changeBackgroundSmooth(randPalette('misc'));
