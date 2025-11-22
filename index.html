@@ -3,804 +3,474 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>تست شخصیت — حرفه‌ای</title>
+<title>تست آشنایی ورزشی — حرفه‌ای</title>
 <style>
-  :root{
-    --card-radius:16px;
-    --accent: #2b9cff;
-    --text:#222;
-    --bg-blur: 20px;
-    --container-w:480px;
-  }
-
-  /* پایه */
-  *{box-sizing:border-box}
-  html,body{height:100%}
-  body{
-    margin:0;
-    font-family: "Vazirmatn", "Tahoma", Helvetica, Arial, sans-serif;
-    color:var(--text);
-    -webkit-font-smoothing:antialiased;
-    -moz-osx-font-smoothing:grayscale;
-    overflow:auto;
-    min-height:100vh;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    padding:20px;
-    background:#f3f7fb;
-  }
-
-  /* زمینهٔ متحرک همیشگی (زیر لایه‌ها) */
-  .bg-anim {
-    position:fixed; inset:0; z-index:-3;
-    background: linear-gradient(120deg, #a3d8ff 0%, #ffd6e0 50%, #c7ffd8 100%);
-    background-size: 300% 300%;
-    animation: bgFlow 18s linear infinite;
-    filter: blur(8px) saturate(110%);
-    transform: scale(1.05);
-    opacity:0.95;
-  }
-  @keyframes bgFlow {
-    0%{background-position:0% 50%}
-    50%{background-position:100% 50%}
-    100%{background-position:0% 50%}
-  }
-
-  /* دو لایهٔ گرادینت برای فید بین رنگ‌ها */
-  .bg-overlay, .bg-overlay.next {
-    position:fixed; inset:0; z-index:-2;
-    pointer-events:none;
-    transition: opacity 900ms ease;
-  }
-  .bg-overlay{opacity:1}
-  .bg-overlay.next{opacity:0}
-
-  /* کانتینر */
-  .wrap{
-    width:100%;
-    max-width:var(--container-w);
-    margin:0 auto;
-  }
-
-  .card{
-    background:rgba(255,255,255,0.85);
-    backdrop-filter: blur(var(--bg-blur));
-    border-radius:var(--card-radius);
-    box-shadow: 0 10px 30px rgba(20,30,60,0.12);
-    padding:16px;
-    margin-bottom:18px;
-    transition: transform .35s ease, opacity .35s ease;
-  }
-
-  .center {text-align:center}
-
-  h1{margin:6px 0 12px; font-size:20px}
-  p.small{margin:6px 0;color:#555;font-size:13px}
-
-  /* انتخاب تست */
-  .test-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
-  .btn{
-    display:inline-block;
-    padding:12px;
-    border-radius:12px;
-    border:none;
-    cursor:pointer;
-    font-weight:600;
-    background:linear-gradient(180deg,#2b9cff,#1b7fd6);
-    color:#fff;
-    box-shadow:0 6px 16px rgba(43,156,255,0.22);
-    transition: transform .15s ease;
-  }
-  .btn:active{transform:translateY(2px)}
-  .btn.ghost{
-    background:linear-gradient(180deg,#fff,#f7fbff);
-    color:var(--text);
-    border:1px solid #e6eefb;
-    box-shadow:none;
-  }
-
-  /* پرسش و گزینه‌ها */
-  #quizBox .question{
-    font-size:17px;
-    font-weight:700;
-    margin-bottom:14px;
-  }
-  .options{display:flex;flex-direction:column;gap:10px}
-  .option{
-    background:linear-gradient(180deg,#ffffff,#fbfdff);
-    border-radius:12px;
-    padding:12px;
-    cursor:pointer;
-    border:1px solid rgba(20,30,60,0.06);
-    transition: transform .18s ease, box-shadow .18s ease, background .18s;
-    box-shadow:0 6px 18px rgba(16,24,40,0.04);
-    font-weight:600;
-  }
-  .option:hover{transform:translateY(-5px); box-shadow:0 18px 40px rgba(16,24,40,0.08)}
-  .option:active{transform:translateY(0)}
-
-  /* progress */
-  .progressWrap{height:10px;background:linear-gradient(180deg,#fff,#f7fbff);border-radius:999px;overflow:hidden}
-  .progressFill{height:100%;width:0%;background:linear-gradient(90deg,#6fe7c6,#2b9cff);transition:width 450ms ease}
-
-  /* کنترل پایین صفحه */
-  .controls{display:flex;gap:10px;margin-top:12px}
-  .controls .smallBtn{
-    flex:1;padding:10px;border-radius:12px;border:none;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,0.06);cursor:pointer
-  }
-
-  /* صفحهٔ نتیجه */
-  .resultCard{
-    border-radius:16px;padding:18px;color:#fff;
-    text-align:center;
-  }
-  .resultTitle{font-size:20px;font-weight:800}
-  .resultDesc{margin-top:10px;font-size:15px;opacity:0.95}
-
-  /* انیمیشن بین سوال‌ها (fade/slide) */
-  .anim-enter{opacity:0; transform:translateY(12px)}
-  .anim-enter.anim-enter-active{opacity:1; transform:none; transition: all 420ms cubic-bezier(.2,.9,.3,1)}
-  .anim-leave{opacity:1}
-  .anim-leave.anim-leave-active{opacity:0; transform:translateY(-8px); transition: all 320ms cubic-bezier(.2,.9,.3,1)}
-
-  /* پاسخ انتخاب شده */
-  .option.selected{background:linear-gradient(90deg,#effbff,#f0f7ff);border-color:#bfe9ff}
-
-  /* موبایل */
-  @media (max-width:420px){
-    .test-grid{grid-template-columns:1fr; gap:8px}
-    body{padding:14px}
-  }
+:root{--card-radius:16px;--accent:#2b9cff;--text:#222;--bg-blur:20px;--container-w:520px}
+*{box-sizing:border-box}html,body{height:100%}body{margin:0;font-family:"Vazirmatn","Tahoma",Helvetica,Arial,sans-serif;color:var(--text);-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;overflow:auto;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px;background:#f3f7fb}
+.bg-anim{position:fixed;inset:0;z-index:-3;background:linear-gradient(120deg,#a3d8ff 0%,#ffd6e0 50%,#c7ffd8 100%);background-size:300% 300%;animation:bgFlow 18s linear infinite;filter:blur(8px) saturate(110%);transform:scale(1.05);opacity:.95}
+@keyframes bgFlow{0%{background-position:0% 50%}50%{background-position:100% 50%}100%{background-position:0% 50%}}
+.bg-overlay,.bg-overlay.next{position:fixed;inset:0;z-index:-2;pointer-events:none;transition:opacity 900ms ease}.bg-overlay{opacity:1}.bg-overlay.next{opacity:0}
+.wrap{width:100%;max-width:var(--container-w);margin:0 auto}
+.card{background:rgba(255,255,255,.88);backdrop-filter:blur(var(--bg-blur));border-radius:var(--card-radius);box-shadow:0 10px 30px rgba(20,30,60,.12);padding:16px;margin-bottom:18px;transition:transform .35s ease,opacity .35s ease}
+.center{text-align:center}h1{margin:6px 0 12px;font-size:20px}p.small{margin:6px 0;color:#555;font-size:13px}
+.test-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:inline-block;padding:12px;border-radius:12px;border:none;cursor:pointer;font-weight:600;background:linear-gradient(180deg,#2b9cff,#1b7fd6);color:#fff;box-shadow:0 6px 16px rgba(43,156,255,.22);transition:transform .15s}
+.btn:active{transform:translateY(2px)}.btn.ghost{background:linear-gradient(180deg,#fff,#f7fbff);color:var(--text);border:1px solid #e6eefb;box-shadow:none}
+#quizBox .question{font-size:17px;font-weight:700;margin-bottom:14px}.options{display:flex;flex-direction:column;gap:10px}.option{background:linear-gradient(180deg,#fff,#fbfdff);border-radius:12px;padding:12px;cursor:pointer;border:1px solid rgba(20,30,60,.06);transition:transform .18s,box-shadow .18s,background .18s;box-shadow:0 6px 18px rgba(16,24,40,.04);font-weight:600}.option:hover{transform:translateY(-5px);box-shadow:0 18px 40px rgba(16,24,40,.08)}.option:active{transform:translateY(0)}
+.progressWrap{height:10px;background:linear-gradient(180deg,#fff,#f7fbff);border-radius:999px;overflow:hidden}.progressFill{height:100%;width:0%;background:linear-gradient(90deg,#6fe7c6,#2b9cff);transition:width 450ms ease}
+.controls{display:flex;gap:10px;margin-top:12px}.controls .smallBtn{flex:1;padding:10px;border-radius:12px;border:none;background:#fff;box-shadow:0 6px 16px rgba(0,0,0,.06);cursor:pointer}
+.resultCard{border-radius:16px;padding:18px;color:#fff;text-align:center}.resultTitle{font-size:20px;font-weight:800}.resultDesc{margin-top:10px;font-size:15px;opacity:.95}
+.anim-enter{opacity:0;transform:translateY(12px)}.anim-enter.anim-enter-active{opacity:1;transform:none;transition:all 420ms cubic-bezier(.2,.9,.3,1)}.anim-leave{opacity:1}.anim-leave.anim-leave-active{opacity:0;transform:translateY(-8px);transition:all 320ms cubic-bezier(.2,.9,.3,1)}
+.option.selected{background:linear-gradient(90deg,#effbff,#f0f7ff);border-color:#bfe9ff}
+.difficultyGrid{display:flex;gap:8px;justify-content:center;margin-top:12px}.difficultyBtn{padding:10px 12px;border-radius:10px;border:none;background:#fff;font-weight:700;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.06)}.difficultyBtn.active{background:linear-gradient(90deg,#ffd47a,#ff9a9e);color:#000}
+.backSmall{display:inline-block;margin-top:12px;background:#fff;border-radius:10px;padding:8px 12px;cursor:pointer;box-shadow:0 6px 16px rgba(0,0,0,.06)}
+@media(max-width:420px){.test-grid{grid-template-columns:1fr;gap:8px}body{padding:14px}}
+.page{display:none}.page.active{display:block}.sport-card{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:12px;
+  padding:18px 0;
+  width:100%;
+  font-size:20px;
+  border-radius:18px;
+  background:white;
+  box-shadow:0 8px 24px rgba(0,0,0,.08);
+}
 </style>
 </head>
 <body>
+<div class="bg-anim" aria-hidden="true"></div>
+<div id="bgLayer" class="bg-overlay" style="background:linear-gradient(120deg, rgba(255,120,120,.12), rgba(120,180,255,.18));"></div>
+<div id="bgNext" class="bg-overlay next" style="background:linear-gradient(120deg, rgba(0,0,0,0), rgba(0,0,0,0));"></div>
+<div class="wrap">
 
-  <!-- پس‌زمینهٔ متحرک دائمی -->
-  <div class="bg-anim" aria-hidden="true"></div>
-
-  <!-- دو لایه برای فید بین گرادینت‌ها -->
-  <div id="bgLayer" class="bg-overlay" style="background:linear-gradient(120deg, rgba(255,120,120,0.12), rgba(120,180,255,0.18));"></div>
-  <div id="bgNext" class="bg-overlay next" style="background:linear-gradient(120deg, rgba(0,0,0,0.0), rgba(0,0,0,0.0));"></div>
-
-  <div class="wrap">
-
-    <!-- انتخاب تست -->
-    <div id="selectTest" class="card center">
-      <h1>تست شخصیت — چه جور تستی می‌خوای؟</h1>
-      <p class="small">هر تست شامل ۱۰ سؤال است — در پایان نتیجهٔ دقیق و گرافیکی می‌بینی.</p>
-
-      <div class="test-grid" style="margin-top:12px">
-        <button class="btn" onclick="startTest('gaming')">🎮 گیمینگ</button>
-        <button class="btn" onclick="startTest('animal')">🐾 حیوانی</button>
-        <button class="btn" onclick="startTest('color')">🎨 رنگ‌ها</button>
-        <button class="btn" onclick="startTest('fun')">🤣 فان</button>
-      </div>
-
-      <div style="margin-top:14px;display:flex;gap:8px">
-        <button class="btn ghost smallBtn" onclick="loadLast()">🔁 نتیجهٔ قبلی</button>
-        <button class="btn ghost smallBtn" onclick="showHow()">ℹ️ راهنما</button>
-      </div>
+  <div id="page-sport" class="page active card center">
+    <h1>کدام ورزش را می‌خواهید بسنجید؟</h1>
+    <p class="small">فوتبال، کشتی، والیبال یا بسکتبال — یکی را انتخاب کنید.</p>
+    <div class="row" style="margin-top:12px">
+      <div class="sport-card" data-key="football"><span style="font-size:22px">⚽</span>&nbsp;<strong>فوتبال</strong></div>
+      <div class="sport-card" data-key="wrestling"><span style="font-size:22px">🤼</span>&nbsp;<strong>کشتی</strong></div>
+      <div class="sport-card" data-key="volleyball"><span style="font-size:22px">🏐</span>&nbsp;<strong>والیبال</strong></div>
+      <div class="sport-card" data-key="basketball"><span style="font-size:22px">🏀</span>&nbsp;<strong>بسکتبال</strong></div>
     </div>
-
-    <!-- کادر آزمون -->
-    <div id="quizBox" class="card" style="display:none">
-      <div style="display:flex;align-items:center;gap:10px;justify-content:space-between">
-        <div style="display:flex;flex-direction:column;gap:8px">
-          <div id="testTitle" style="font-weight:800"></div>
-          <div class="small" id="testSub"></div>
-        </div>
-        <div style="width:40%">
-          <div class="progressWrap" aria-hidden="true">
-            <div id="progressFill" class="progressFill"></div>
-          </div>
-        </div>
-      </div>
-
-      <div id="questionArea" style="margin-top:16px">
-        <div id="questionCard" class="anim-enter anim-enter-active">
-          <div class="question" id="questionText"></div>
-          <div class="options" id="optionsBox"></div>
-        </div>
-      </div>
-
-      <div class="controls">
-        <button class="smallBtn" onclick="goBack()">⬅️ بازگشت</button>
-        <button class="smallBtn" onclick="skipQuestion()">⏭ رد سؤال</button>
-      </div>
+    <div style="margin-top:14px">
+      <button class="btn ghost smallBtn" id="btn-last">🔁 مشاهدهٔ آخرین نتیجه</button>
+      <button class="btn ghost smallBtn" id="btn-help">ℹ️ راهنما</button>
     </div>
-
-    <!-- نتیجه -->
-    <div id="resultBox" class="card" style="display:none">
-      <div id="resultCard" class="resultCard" style="background:linear-gradient(90deg,#2b9cff,#6fe7c6)">
-        <div class="resultTitle" id="resultTitle">🎉 نتیجه</div>
-        <div class="resultDesc" id="resultDesc"></div>
-      </div>
-
-      <div style="margin-top:12px;display:flex;gap:8px">
-        <button class="btn" onclick="shareResult()">📤 کپی نتیجه</button>
-        <button class="btn ghost" onclick="resetAll()">🔄 انجام دوباره</button>
-      </div>
-
-      <p class="small" style="margin-top:10px">نتیجه در مرورگر ذخیره شد — می‌تونی بعداً برگردی و ببینی.</p>
-    </div>
-
   </div>
 
+  <div id="page-level" class="page card center">
+    <h1 id="levelTitle">انتخاب سطح</h1>
+    <p class="small" id="levelSub">سطح را انتخاب کنید — آزمون ۱۰ سوال خواهد داشت.</p>
+    <div class="difficultyGrid" style="margin-top:18px">
+      <button class="difficultyBtn" id="diffEasy" data-level="easy">آسان</button>
+      <button class="difficultyBtn" id="diffMed" data-level="medium">متوسط</button>
+      <button class="difficultyBtn" id="diffHard" data-level="hard">سخت</button>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:10px;justify-content:center">
+      <button class="btn" id="startTestBtn" disabled>▶️ شروع تست</button>
+      <button class="btn ghost smallBtn" id="backToSportBtn">🔙 بازگشت</button>
+    </div>
+  </div>
+
+  <div id="page-quiz" class="page card">
+    <div style="display:flex;align-items:center;gap:10px;justify-content:space-between">
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div id="testTitle" style="font-weight:800"></div>
+        <div class="small" id="testSub"></div>
+      </div>
+      <div style="width:40%">
+        <div class="progressWrap" aria-hidden="true">
+          <div id="progressFill" class="progressFill"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="questionArea" style="margin-top:16px">
+      <div id="questionCard" class="anim-enter anim-enter-active">
+        <div class="question" id="questionText"></div>
+        <div class="options" id="optionsBox"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="smallBtn" id="btn-backQ">⬅️ بازگشت</button>
+      <button class="smallBtn" id="btn-skipQ">⏭ رد سؤال</button>
+    </div>
+  </div>
+
+  <div id="page-result" class="page card">
+    <div id="resultCard" class="resultCard" style="background:linear-gradient(90deg,#2b9cff,#6fe7c6)">
+      <div class="resultTitle" id="resultTitle">🎯 نتیجهٔ آشنایی</div>
+      <div class="resultDesc" id="resultDesc"></div>
+      <div style="margin-top:10px" id="resultExtra"></div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px;justify-content:center">
+      <button class="btn" id="btn-share">📤 کپی نتیجه</button>
+      <button class="btn ghost" id="btn-restart">🔄 انجام دوباره</button>
+    </div>
+    <p class="small" style="margin-top:10px">نتایج در مرورگر ذخیره می‌شوند.</p>
+  </div>
+
+</div>
+
 <script>
-/* ===========================
-   دیتای تست‌ها (۱۰ سؤال هر کدوم)
-   هر گزینه یک کلید category می‌دهد
-   categories:
-   - gaming: aggressive / strategic / speedy / creative
-   - animal: cat / fox / wolf / lion
-   - color: blue / red / green / yellow
-   - fun: online / sleeper / foodie / survivor
-   =========================== */
-
-const tests = {
-  gaming:{
-    title:"تست شخصیت گیمینگ",
-    sub:"ببین چه نوع پلیر/گیمری هستی",
-    categories:["aggressive","strategic","speedy","creative"],
-    catNames:{
-      aggressive:"پلیر تهاجمی 🔥",
-      strategic:"پلیر استراتژیک 🧠",
-      speedy:"پلیر سرعتی ⚡",
-      creative:"پلیر خلاق 🎨"
-    },
-    questions:[
-      {q:"در مبارزهٔ 1v1 تو چطور بازی می‌کنی؟", a:[
-        {t:"حمله می‌کنم و جلو میرم",c:"aggressive"},
-        {t:"صبر می‌کنم و فرصت‌طلب می‌شم",c:"strategic"},
-        {t:"بازی سرعتی و مچ می‌زنم",c:"speedy"},
-        {t:"حرکت غیرقابل‌پیش‌بینی می‌کنم",c:"creative"}]},
-      {q:"وقتی تیمی بازی می‌کنی نقش مورد علاقه‌ات چیه؟", a:[
-        {t:"جلو، تاپ و فشار",c:"aggressive"},
-        {t:"پلن می‌چینم و هدایت می‌کنم",c:"strategic"},
-        {t:"اسکوانت و فلنک می‌کنم",c:"speedy"},
-        {t:"تجربهٔ عجیب و غریب می‌کنم",c:"creative"}]},
-      {q:"در بازی‌های رقابتی چه چیزی برات مهم‌تره؟", a:[
-        {t:"غلظت اکشن و درگیری",c:"aggressive"},
-        {t:"برد با کمترین اشتباه",c:"strategic"},
-        {t:"شکستن رکورد و سرعت",c:"speedy"},
-        {t:"خلاقیت تو بازی‌کردن",c:"creative"}]},
-      {q:"برای یادگیری یک بازی جدید چه می‌کنی؟", a:[
-        {t:"فقط وارد می‌شم و تجربه می‌کنم",c:"aggressive"},
-        {t:"راهنما میخونم و متد یاد می‌گیرم",c:"strategic"},
-        {t:"با رکوردزنی و تمرین سریع یاد می‌گیرم",c:"speedy"},
-        {t:"تکنیک‌هامو منحصر به فرد می‌کنم",c:"creative"}]},
-      {q:"در مقابل باخت واکنشت چیه؟", a:[
-        {t:"فوراً می‌زنم جلو برای ریونج",c:"aggressive"},
-        {t:"می‌نشینم تحلیل می‌کنم",c:"strategic"},
-        {t:"سریع بازی بعدی رو میزنم",c:"speedy"},
-        {t:"راه متفاوتی امتحان می‌کنم",c:"creative"}]},
-      {q:"در انتخاب وسایل/اسلحه چه معیار داری؟", a:[
-        {t:"قدرت خام و خسارت بالا",c:"aggressive"},
-        {t:"هماهنگی با پلن و تیم",c:"strategic"},
-        {t:"سرعت و موبایل بودن",c:"speedy"},
-        {t:"ظاهر و امتیازات غیرمعمول",c:"creative"}]},
-      {q:"در مسابقات آنلاین ترجیح میدی چی باشی؟", a:[
-        {t:"بازیکن فشاردهنده",c:"aggressive"},
-        {t:"کاپیتان تیم",c:"strategic"},
-        {t:"رنک‌بوستر سرعتی",c:"speedy"},
-        {t:"بازیکن خلاق که همه رو غافلگیر می‌کنه",c:"creative"}]},
-      {q:"چه نوع تجربه‌ای تو بازی دنبال می‌کنی؟", a:[
-        {t:"حاد و درگیری زیاد",c:"aggressive"},
-        {t:"برد هوشمندانه",c:"strategic"},
-        {t:"سرعت و آدرنالین",c:"speedy"},
-        {t:"آزادی خلاقانه",c:"creative"}]},
-      {q:"وقتی تیم ضعیفه تو؟", a:[
-        {t:"خودمو نشون میدم و فشار می‌دم",c:"aggressive"},
-        {t:"پلن میدم تا کمبودها جبران بشه",c:"strategic"},
-        {t:"سریع عمل می‌کنم تا اوضاع رو عوض کنم",c:"speedy"},
-        {t:"تجربهٔ جدید امتحان می‌کنم",c:"creative"}]},
-      {q:"در بازی‌سازی (گیم دیزاین) بیشتر به چی علاقه داری؟", a:[
-        {t:"مکانیک‌ هیجان‌انگیز و جنگی",c:"aggressive"},
-        {t:"سیستم‌های عمیق و متعادل",c:"strategic"},
-        {t:"مکانیک‌های پویای سرعتی",c:"speedy"},
-        {t:"ایده‌های نوآورانه و هنری",c:"creative"}]},
-    ]
+/* ===== داده‌ها: 4 ورزش × 3 سطح × 10 سؤال (120 سؤال) ===== */
+/* برای خوانایی، داده‌ها ساختارمند و کامل هستند. امتیاز هر گزینه: p (0..3) */
+const sports = {/* Football, Wrestling, Volleyball, Basketball */
+  football: { title: "فوتبال",
+    levels:{
+      easy:[
+        {q:"تعداد بازیکن هر تیم در زمین چند نفر است؟", a:[{t:"۹",p:0},{t:"۱۰",p:1},{t:"۱۱",p:3},{t:"بستگی دارد",p:0}]},
+        {q:"یک بازی رسمی فوتبال چند نیمه دارد؟", a:[{t:"یک نیمه",p:0},{t:"دو نیمه",p:3},{t:"سه نیمه",p:0},{t:"چهار نیمه",p:0}]},
+        {q:"هر نیمهٔ رسمی فوتبال چند دقیقه‌ است؟", a:[{t:"۳۰",p:0},{t:"۴۵",p:3},{t:"۶۰",p:0},{t:"۹۰",p:0}]},
+        {q:"ضربهٔ پنالتی از چه فاصله‌ای زده می‌شود؟", a:[{t:"۱۱ متر",p:3},{t:"۱۰ متر",p:0},{t:"۹ متر",p:1},{t:"۱۳ متر",p:0}]},
+        {q:"آفساید معمولاً در چه وضعیتی اعلام می‌شود؟", a:[{t:"وقتی بازیکن جلوتر از توپ باشد",p:0},{t:"وقتی بازیکن جلوتر از آخرین مدافع در لحظهٔ پاس باشد",p:3},{t:"بعد از گل",p:0},{t:"در موقع تعویض",p:0}]},
+        {q:"کارت زرد چه مفهومی دارد؟", a:[{t:"اخطار",p:3},{t:"اخراج",p:0},{t:"تعویض",p:0},{t:"پنالتی",p:0}]},
+        {q:"عرض استاندارد دروازه فوتبال چقدر است؟", a:[{t:"۷٫۳۲ متر",p:3},{t:"۵ متر",p:0},{t:"۶ متر",p:1},{t:"۸ متر",p:0}]},
+        {q:"چه کسی مسئول تصمیم نهایی روی زمین است؟", a:[{t:"مربی تیم",p:0},{t:"داور وسط",p:3},{t:"کمک‌داور",p:1},{t:"تماشاگران",p:0}]},
+        {q:"نقش هافبک چیست؟", a:[{t:"فقط گل زدن",p:0},{t:"وصل دفاع و حمله، توزیع توپ",p:3},{t:"فقط دفاع",p:0},{t:"هیچ",p:0}]},
+        {q:"سیستم امتیازدهی استاندارد لیگ‌ها چیست؟", a:[{t:"۳ امتیاز برد، ۱ مساوی",p:3},{t:"۲ امتیاز برد",p:0},{t:"۵ امتیاز برد",p:0},{t:"هیچ امتیازی",p:0}]}
+      ],
+      medium:[
+        {q:"تفاوت ضربهٔ آزاد مستقیم و غیرمستقیم چیست؟", a:[{t:"هیچ",p:0},{t:"در مستقیم می‌توان مستقیماً گل زد، در غیرمستقیم باید پاس بخورد",p:3},{t:"یکی پنالتی است",p:0},{t:"فقط زاویه فرق دارد",p:1}]},
+        {q:"VAR برای چه مواردی استفاده می‌شود؟", a:[{t:"پخش زنده",p:0},{t:"بازبینی صحنه‌های مشکوک برای اصلاح اشتباهات داوری",p:3},{t:"افزایش زمان",p:0},{t:"تبلیغات",p:0}]},
+        {q:"تفاوت هافبک دفاعی و هافبک هجومی چیست؟", a:[{t:"هیچ",p:0},{t:"حرکت و نقش متفاوت در پوشش دفاع و ایجاد حمله",p:3},{t:"یکی دروازه‌بان است",p:0},{t:"فقط تفاوت لباس",p:0}]},
+        {q:"آفساید چگونه از نظر آخرین مدافع سنجیده می‌شود؟", a:[{t:"آخرین مدافع ملاک است",p:3},{t:"خط وسط ملاک است",p:0},{t:"خود توپ ملاک است",p:1},{t:"تصادفی است",p:0}]},
+        {q:"تعویض تاکتیکی چه زمانی اتفاق می‌افتد؟", a:[{t:"همیشه در شروع بازی",p:0},{t:"برای تغییر سیستم یا جایگزینی بازیکن آسیب‌دیده",p:3},{t:"هیچ وقت",p:0},{t:"قبل از پنالتی",p:1}]},
+        {q:"نقش آنالیزور چیست؟", a:[{t:"فقط فیلم گرفتن",p:0},{t:"ارائهٔ داده‌ها، تحلیل حریف و پیشنهاد تاکتیک",p:3},{t:"مربی تیم",p:0},{t:"مسئله اداری",p:0}]},
+        {q:"ضربهٔ سر مؤثر نیازمند چیست؟", a:[{t:"فقط قدرت",p:0},{t:"زمان‌بندی و زاویهٔ درست",p:3},{t:"قد بلند فقط",p:1},{t:"شانس",p:0}]},
+        {q:"هدف از پرسینگ بالا چیست؟", a:[{t:"خالی کردن زمین",p:0},{t:"فشار برای بازی گرفتن توپ در زمین حریف",p:3},{t:"کاهش تعداد تعویض",p:0},{t:"افزایش خطا",p:1}]},
+        {q:"xG چه چیزی را اندازه می‌گیرد؟", a:[{t:"تعداد گل‌ها",p:0},{t:"احتمال تبدیل موقعیت به گل",p:3},{t:"امتیاز تیم",p:0},{t:"تعداد پاس‌ها",p:0}]},
+        {q:"نقش کاپیتان چیست؟", a:[{t:"فقط نشان‌دادن بازوبند",p:0},{t:"رهبری تیم و ارتباط با داور",p:3},{t:"تعیین ترکیب",p:1},{t:"هیچ",p:0}]}
+      ],
+      hard:[
+        {q:"ماهیت counter-press چیست؟", a:[{t:"عدم فشار",p:0},{t:"فشار فوری بعد از از دست دادن توپ برای بازیابی",p:3},{t:"تعویض بازیکن",p:0},{t:"پاس بی‌هدف",p:1}]},
+        {q:"پارامترهای مهم برای ارزیابی مدافع مرکزی کدامند؟", a:[{t:"فقط قد",p:0},{t:"قطع توپ، پیروزی در تک‌به‌تک، دقت پاس",p:3},{t:"رنگ کفش",p:0},{t:"تعداد فالوور",p:0}]},
+        {q:"پریودایزیشن چه کمکی در فصل می‌کند؟", a:[{t:"بدون فایده",p:0},{t:"هفته‌بندی تمرین برای اوج در زمان مسابقات",p:3},{t:"فقط استراحت",p:1},{t:"فشار مضاعف",p:0}]},
+        {q:"چگونه از set-piece بیشترین استفاده را ببریم؟", a:[{t:"فقط شانس",p:0},{t:"تمرین ترکیب و چینش بازیکنان",p:3},{t:"افزایش شوت",p:1},{t:"تعویض مکرر",p:0}]},
+        {q:"معیارهای انتخاب مهاجم خوب چیست؟", a:[{t:"قد فقط",p:0},{t:"xG، شوت در چارچوب، موقعیت‌سازی",p:3},{t:"لباس زیبا",p:0},{t:"هواداران",p:0}]},
+        {q:"تحلیل انتقال (transition) به چه معناست؟", a:[{t:"فقط سرعت",p:1},{t:"تغییر سریع از دفاع به حمله یا بالعکس",p:3},{t:"توقف بازی",p:0},{t:"تعویض",p:0}]},
+        {q:"نقش آنالیز داده در تاکتیک چیست؟", a:[{t:"فقط جدول",p:0},{t:"شناسایی الگوها و نقاط ضعف حریف",p:3},{t:"فقط برای مربی",p:1},{t:"بی‌فایده",p:0}]},
+        {q:"فرمول موفقیت در پرسینگ چیست؟", a:[{t:"قد زیاد",p:0},{t:"هماهنگی تیم، زمان‌بندی و انرژی",p:3},{t:"محض شانس",p:0},{t:"فقط دفاع",p:1}]},
+        {q:"چه KPI هایی برای مهاجم مهم‌اند؟", a:[{t:"فقط گل‌ها",p:0},{t:"xG، شوت‌درچارچوب، موقعیت‌های ایجادشده",p:3},{t:"تعداد تعویض",p:0},{t:"قد",p:0}]},
+        {q:"چگونه تیم حرفه‌ای بازیکن را برای نقش خاص انتخاب می‌کند؟", a:[{t:"فقط قد",p:0},{t:"تحلیل توانایی‌ها، نقش تاکتیکی و سازگاری",p:3},{t:"شانس",p:0},{t:"رنگ چشم",p:0}]}
+      ]
+    }
   },
-
-  animal:{
-    title:"تست شخصیت حیوانی",
-    sub:"کدوم حیوان بیشترین شباهت به شخصیت تو داره؟",
-    categories:["cat","fox","wolf","lion"],
-    catNames:{
-      cat:"🐱 گربه",
-      fox:"🦊 روباه",
-      wolf:"🐺 گرگ",
-      lion:"🦁 شیر"
-    },
-    questions:[
-      {q:"در جمع بیشتر چطور رفتار می‌کنی؟", a:[
-        {t:"آرام و مرموز",c:"cat"},
-        {t:"زیرک و باهوش",c:"fox"},
-        {t:"وفادار و پیوسته",c:"wolf"},
-        {t:"رهبر و مقتدر",c:"lion"}]},
-      {q:"تفریح مورد علاقه‌ات چیه؟", a:[
-        {t:"آرامش و لم دادن",c:"cat"},
-        {t:"کشف کردن چیزها",c:"fox"},
-        {t:"دوستی و اجتماع",c:"wolf"},
-        {t:"چالش و تسلط",c:"lion"}]},
-      {q:"در مواجهه با خطر؟", a:[
-        {t:"کم‌کاری می‌کنم و مراقبم",c:"cat"},
-        {t:"خلاقانه فرار یا حل می‌کنم",c:"fox"},
-        {t:"کنار گروه می‌جنگم",c:"wolf"},
-        {t:"مستقیم مقابله می‌کنم",c:"lion"}]},
-      {q:"دوستی برای تو یعنی؟", a:[
-        {t:"همراهی آرام",c:"cat"},
-        {t:"هم‌پیمانی زیرک",c:"fox"},
-        {t:"وفاداری تا آخر",c:"wolf"},
-        {t:"پشتیبانی و چشم هم‌چشمی",c:"lion"}]},
-      {q:"در تصمیم‌گیری؟", a:[
-        {t:"احساسی و با فاصله",c:"cat"},
-        {t:"آنالیز و ناپیش‌بینی",c:"fox"},
-        {t:"با مشورت گروه",c:"wolf"},
-        {t:"قاطع و سریع",c:"lion"}]},
-      {q:"در خانه چه‌کاره‌ای؟", a:[
-        {t:"آرام و راحت",c:"cat"},
-        {t:"کنجکاو و بازیگوش",c:"fox"},
-        {t:"متکی و مراقب",c:"wolf"},
-        {t:"صاحب‌خانهٔ قدرتمند",c:"lion"}]},
-      {q:"هنگام موفقیت چه واکنشی داری؟", a:[
-        {t:"سکوت شیرین",c:"cat"},
-        {t:"باهوشانه جشن می‌گیرم",c:"fox"},
-        {t:"با تیم خوشحالم",c:"wolf"},
-        {t:"با غرور جلوه می‌کنم",c:"lion"}]},
-      {q:"در برابر تغییر چطور هستی؟", a:[
-        {t:"آهسته قبول می‌کنم",c:"cat"},
-        {t:"سازگار و سریع",c:"fox"},
-        {t:"با حمایت دیگران",c:"wolf"},
-        {t:"خوش‌آمدید تغییر",c:"lion"}]},
-      {q:"تعریف شجاعت از نظر تو؟", a:[
-        {t:"اعتماد به خود",c:"cat"},
-        {t:"هوش و ترفند",c:"fox"},
-        {t:"همراهی و اتحاد",c:"wolf"},
-        {t:"دست زدن به خطر",c:"lion"}]},
-      {q:"کدام ویژگی بیشتر بهت می‌خوره؟", a:[
-        {t:"باهوش در عقب‌نشینی",c:"cat"},
-        {t:"زیرکی",c:"fox"},
-        {t:"وفاداری",c:"wolf"},
-        {t:"رهبری",c:"lion"}]},
-    ]
+  wrestling: { title: "کشتی",
+    levels:{
+      easy:[
+        {q:"کدام دو سبک کشتی در المپیک وجود دارد؟", a:[{t:"آزاد و فرنگی",p:3},{t:"فقط آزاد",p:0},{t:"فقط فرنگی",p:0},{t:"کشتی و جودو",p:0}]},
+        {q:"کف کردن شانه‌ها چه نتیجه‌ای دارد؟", a:[{t:"برد فوری (pin)",p:3},{t:"نمره کم",p:0},{t:"اخراج",p:0},{t:"تعویض",p:0}]},
+        {q:"آیا کشتی‌گیران در دسته‌های وزنی رقابت می‌کنند؟", a:[{t:"بله",p:3},{t:"خیر",p:0},{t:"فقط در اردو",p:0},{t:"بعضی اوقات",p:1}]},
+        {q:"لباس رسمی کشتی چیست؟", a:[{t:"لباس یک‌تکه و کفش مخصوص",p:3},{t:"تی‌شرت و شلوار",p:0},{t:"کفش روزمره",p:0},{t:"لباس آزاد",p:1}]},
+        {q:"امتیاز در کشتی بر اساس چه چیزی است؟", a:[{t:"تکنیک‌ها و کنترل",p:3},{t:"فقط اقتدار",p:0},{t:"زمان",p:1},{t:"شانس",p:0}]},
+        {q:"کشتی فرنگی بیشتر روی چه چیزی تأکید دارد؟", a:[{t:"بالا تنه و گرفتن",p:3},{t:"پایین تنه",p:0},{t:"دویدن",p:0},{t:"پرش",p:0}]},
+        {q:"آیا کاهش وزن برای مسابقه متداول است؟", a:[{t:"بله و باید با احتیاط انجام شود",p:3},{t:"نه",p:0},{t:"همیشه ممنوع",p:0},{t:"بی‌معنی",p:0}]},
+        {q:"روش‌های گرم کردن برای کشتی‌گیران شامل چیست؟", a:[{t:"کشش و تمرینات پویا",p:3},{t:"هیچ",p:0},{t:"فقط استراحت",p:0},{t:"تماشای فیلم",p:1}]},
+        {q:"تاکتیک اصلی در دفاع چیست؟", a:[{t:"فقط زور",p:0},{t:"حفظ تعادل و مرکز ثقل",p:3},{t:"فرار",p:1},{t:"هیچ",p:0}]},
+        {q:"مدت معمول یک دیدار کشتی آماچر چیست؟", a:[{t:"سه راند کوتاه",p:3},{t:"چند ساعت",p:0},{t:"پی در پی",p:1},{t:"متغیر",p:0}]}
+      ],
+      medium:[
+        {q:"تفاوت takedown و escape چیست؟", a:[{t:"takedown گرفتن کنترل، escape فرار از کنترل",p:3},{t:"هم معنی",p:0},{t:"هر دو دفاعی",p:1},{t:"هرگز استفاده نمی‌شوند",p:0}]},
+        {q:"حرکت turns چه امتیازی می‌دهد؟", a:[{t:"نمره برای برگرداندن حریف به پشت",p:3},{t:"نمره ندارد",p:0},{t:"تنها برای نمایش",p:0},{t:"مجازات است",p:1}]},
+        {q:"چه حرکاتی خطرناک محسوب می‌شوند؟", a:[{t:"حرکت‌هایی که گردن یا ستون فقرات را تهدید می‌کنند",p:3},{t:"همه",p:0},{t:"فقط پرتاب‌ها",p:1},{t:"هیچ",p:0}]},
+        {q:"روش‌های کاهش وزن موقتی چیست؟", a:[{t:"کنترل مایعات و رژیم کوتاه‌مدت (با احتیاط)",p:3},{t:"مصرف زیاد غذا",p:0},{t:"بی‌توجهی",p:0},{t:"تنها ورزش",p:1}]},
+        {q:"تاکتیک‌های محافظت در وضعیت پایین چیست؟", a:[{t:"قدرت خام",p:1},{t:"مرکز ثقل پایین و قفل‌های مناسب",p:3},{t:"هیچ",p:0},{t:"فقط فریاد",p:0}]},
+        {q:"چگونه عملکرد تکنیکی را افزایش دهیم؟", a:[{t:"تکرار هدفمند و فیلم‌برداری",p:3},{t:"فقط تکرار بی‌هدف",p:0},{t:"استراحت",p:0},{t:"مصرف مکمل",p:1}]},
+        {q:"نقش مربی هنگام مسابقه چیست؟", a:[{t:"راهنمایی تاکتیکی و انگیزشی",p:3},{t:"فقط تشویق",p:0},{t:"داوری",p:0},{t:"تعویض داور",p:1}]},
+        {q:"امتیاز پرتاب بزرگ چگونه است؟", a:[{t:"پرتاب کنترل‌شده با امتیاز بالا",p:3},{t:"همان امتیاز",p:0},{t:"نمره منفی",p:0},{t:"پاداش",p:1}]},
+        {q:"روش‌های افزایش استقامت چیست؟", a:[{t:"ترکیب هوازی و تمرین تکنیک",p:3},{t:"فقط دویدن",p:1},{t:"استراحت",p:0},{t:"بی‌تفاوتی",p:0}]},
+        {q:"استفادهٔ ایمن از تکنیک‌های سریع چگونه است؟", a:[{t:"تحت نظارت و با تکنیک صحیح",p:3},{t:"همیشه خطرناک",p:0},{t:"فقط برای حرفه‌ای‌ها",p:1},{t:"هیچ",p:0}]}
+      ],
+      hard:[
+        {q:"پارامترهای کلیدی برای تحلیل یک پرتاب موفق چیست؟", a:[{t:"زمان‌بندی، زاویه و کنترل فرود",p:3},{t:"فقط قدرت",p:0},{t:"قد",p:1},{t:"رنگ لباس",p:0}]},
+        {q:"پریودایزیشن چه نقش دارد؟", a:[{t:"برنامه‌ریزی دوره‌ای برای اوج‌گیری عملکرد",p:3},{t:"تمرین مداوم",p:1},{t:"بی‌فایده",p:0},{t:"فقط تغذیه",p:0}]},
+        {q:"نحوهٔ مدیریت آسیب شانه چگونه است؟", a:[{t:"فیزیوتراپی و تقویت",p:3},{t:"نادیده گرفتن",p:0},{t:"فقط استراحت",p:1},{t:"جراحی فوری",p:0}]},
+        {q:"تکنیک‌های کنترل پیشرفته عبارتند از چه مواردی؟", a:[{t:"قفل‌های ترکیبی و مدیریت مرکز ثقل",p:3},{t:"فقط زور",p:0},{t:"پریدن",p:1},{t:"هیچ",p:0}]},
+        {q:"شاخص‌های روانی مهم برای کشتی‌گیر چیست؟", a:[{t:"مدیریت استرس و تمرکز",p:3},{t:"فقط انگیزه",p:1},{t:"بی‌اهمیت",p:0},{t:"خوشحالی",p:0}]},
+        {q:"چگونه آسیب‌ها را در فصل کاهش دهیم؟", a:[{t:"پریودایزیشن و ریکاوری",p:3},{t:"کاهش تمرین",p:1},{t:"مصرف دارو",p:0},{t:"نادیده گرفتن",p:0}]},
+        {q:"معیارهای انتخاب وزن مناسب کدام‌اند؟", a:[{t:"ترکیب بدنی و قدرت نسبی",p:3},{t:"فقط کم کردن وزن",p:0},{t:"شانس",p:0},{t:"قد",p:1}]},
+        {q:"نقش بدنساز چیست؟", a:[{t:"برنامهٔ قدرت-توان اختصاصی",p:3},{t:"فقط تمرین عمومی",p:1},{t:"فقط تغذیه",p:0},{t:"هیچ",p:0}]},
+        {q:"تکنیک‌های دفاعی پیشرفته چیست؟", a:[{t:"جابجایی مرکز ثقل و شکستن کنترل",p:3},{t:"فقط قدرت",p:0},{t:"دور شدن",p:1},{t:"بی‌اثر",p:0}]},
+        {q:"چگونه در لحظات پایانی امتیاز کسب کنیم؟", a:[{t:"برنامه‌ریزی و بهره‌گیری از خستگی حریف",p:3},{t:"حمله کور",p:0},{t:"تسلیم",p:0},{t:"شانس",p:1}]}
+      ]
+    }
   },
-
-  color:{
-    title:"تست شخصیت رنگ‌ها",
-    sub:"رنگ تو چه چیزهایی را می‌گوید؟",
-    categories:["blue","red","green","yellow"],
-    catNames:{
-      blue:"آبی — آرام و منطقی 💙",
-      red:"قرمز — پر انرژی ❤️",
-      green:"سبز — مهربان و پایدار 💚",
-      yellow:"زرد — خلاق و خوشحال 💛"
-    },
-    questions:[
-      {q:"وقتی استرسی، چه کاری می‌کنی؟", a:[
-        {t:"آرام نفس می‌کشم",c:"blue"},
-        {t:"فعال می‌شم و انرژی می‌ذارم",c:"red"},
-        {t:"بحث می‌کنم یا پشتیبانی می‌گیرم",c:"green"},
-        {t:"یه چیزی طنزگونه می‌سازم",c:"yellow"}]},
-      {q:"روز تعطیل ایده‌آل؟", a:[
-        {t:"کتاب و آرامش",c:"blue"},
-        {t:"تفریحات هیجانی",c:"red"},
-        {t:"پیک‌نیک با دوستان",c:"green"},
-        {t:"پروژهٔ خلاقانه",c:"yellow"}]},
-      {q:"در مواجهه با نظر مخالف؟", a:[
-        {t:"با منطق جواب میدم",c:"blue"},
-        {t:"دفاعیه و پراحساس می‌شم",c:"red"},
-        {t:"می‌کوشم تفاهم ایجاد کنم",c:"green"},
-        {t:"موضوع رو کمرنگ می‌کنم با شوخی",c:"yellow"}]},
-      {q:"وقتی خوشحالی چه می‌کنی؟", a:[
-        {t:"درون‌گرایانه شاد می‌شم",c:"blue"},
-        {t:"سر به فلک کشیده خوشحالم",c:"red"},
-        {t:"با دیگران شریک می‌شم",c:"green"},
-        {t:"خلاقیت نشون میدم",c:"yellow"}]},
-      {q:"کدام فعالیت تو را راضی می‌کند؟", a:[
-        {t:"تحقیق و یادگیری",c:"blue"},
-        {t:"چالش فیزیکی",c:"red"},
-        {t:"کمک به دیگران",c:"green"},
-        {t:"خلق آثار جدید",c:"yellow"}]},
-      {q:"انتخاب تعطیلات؟", a:[
-        {t:"سفر آرام کنار دریا",c:"blue"},
-        {t:"سفر ماجراجویانه",c:"red"},
-        {t:"طبیعت و جنگل",c:"green"},
-        {t:"یک تور هنری",c:"yellow"}]},
-      {q:"چه هدیه‌ای بهتره برات؟", a:[
-        {t:"چیزی کاربردی",c:"blue"},
-        {t:"هیجان‌انگیز",c:"red"},
-        {t:"طبیعی و ساده",c:"green"},
-        {t:"خلاقانه و بامزه",c:"yellow"}]},
-      {q:"در تیم نقش تو چیه؟", a:[
-        {t:"تحلیل‌گر",c:"blue"},
-        {t:"موتور انرژی",c:"red"},
-        {t:"هماهنگ‌کننده",c:"green"},
-        {t:"ایده‌پرداز",c:"yellow"}]},
-      {q:"فارغ از شرایط، کدوم برات جذابه؟", a:[
-        {t:"ثبات",c:"blue"},
-        {t:"هیجان",c:"red"},
-        {t:"هماهنگی",c:"green"},
-        {t:"نوآوری",c:"yellow"}]},
-      {q:"در پایان روز چه حسی می‌خوای؟", a:[
-        {t:"آرامش",c:"blue"},
-        {t:"انگیزه‌مند",c:"red"},
-        {t:"گرما و دوستی",c:"green"},
-        {t:"شاد و الهام‌گرفته",c:"yellow"}]},
-    ]
+  volleyball: { title:"والیبال",
+    levels:{
+      easy:[
+        {q:"هر تیم در زمین والیبال چند بازیکن دارد؟", a:[{t:"۴",p:0},{t:"۶",p:3},{t:"۸",p:0},{t:"۱۰",p:0}]},
+        {q:"حداکثر چند ضربه در هر طرف مجاز است؟", a:[{t:"۲",p:0},{t:"۳",p:3},{t:"۴",p:0},{t:"بدون محدودیت",p:0}]},
+        {q:"لیبرو چه وظیفه‌ای دارد؟", a:[{t:"اسپایک زن",p:0},{t:"متخصص دریافت با لباس متفاوت",p:3},{t:"کاپیتان",p:0},{t:"داور",p:0}]},
+        {q:"رالی پوینت یعنی چه؟", a:[{t:"فقط تیم سرویس‌زن امتیاز می‌گیرد",p:0},{t:"هر رالی برای برنده امتیاز دارد",p:3},{t:"امتیازدهی بر اساس ست",p:0},{t:"بی‌معنی است",p:0}]},
+        {q:"ارتفاع تور مردان حدوداً چقدر است؟", a:[{t:"۲٫۴۳ متر",p:3},{t:"۲ متر",p:0},{t:"۳ متر",p:0},{t:"۱٫۵ متر",p:0}]},
+        {q:"سرویس از کجا زده می‌شود؟", a:[{t:"خط سرویس عقب",p:3},{t:"وسط زمین",p:0},{t:"روی تور",p:0},{t:"داخل زمین",p:0}]},
+        {q:"بلاک چه زمانی امتیاز مستقیم می‌آورد؟", a:[{t:"وقتی توپ در زمین حریف بیفتد",p:3},{t:"همیشه",p:0},{t:"هرگز",p:0},{t:"فقط در ست آخر",p:1}]},
+        {q:"تعویض‌ها معمولاً چگونه‌اند؟", a:[{t:"نامحدود",p:0},{t:"محدود و طبق قوانین لیگ",p:3},{t:"فقط یک تعویض",p:0},{t:"تعویض ممنوع",p:0}]},
+        {q:"هدف اصلی در والیبال چیست؟", a:[{t:"پایین آوردن توپ",p:0},{t:"بر زمین زدن توپ در زمین حریف",p:3},{t:"جلوگیری از سرویس",p:0},{t:"دویدن",p:0}]},
+        {q:"نقش پاسور چیست؟", a:[{t:"تنظیم و توزیع توپ برای حمله",p:3},{t:"سرویس‌زن",p:0},{t:"کاپیتان",p:0},{t:"هیچ",p:0}]}
+      ],
+      medium:[
+        {q:"تفاوت block و dig چیست؟", a:[{t:"یکی است",p:0},{t:"block در تور، dig در زمین برای جلوگیری از افت توپ",p:3},{t:"block همیشه هجومی است",p:0},{t:"dig برای سرویس است",p:1}]},
+        {q:"استراتژی دریافت سرویس چیست؟", a:[{t:"فقط ایستادن",p:0},{t:"چیدمان مناسب و هماهنگی با لیبرو",p:3},{t:"پاس به تور",p:0},{t:"تعویض سریع",p:1}]},
+        {q:"نقش اسپایکر چیست؟", a:[{t:"حمله‌زن اصلی",p:3},{t:"فقط دفاع",p:0},{t:"فقط سرویس",p:1},{t:"هیچ",p:0}]},
+        {q:"چگونه با بلوک قوی مقابله کنیم؟", a:[{t:"کاهش حمله",p:0},{t:"تغییر زاویه و پاس سریع",p:3},{t:"تعویض کامل",p:0},{t:"افزایش قدرت",p:1}]},
+        {q:"تکنیک‌های افزایش ارتفاع پرش چیست؟", a:[{t:"فقط وزنه",p:1},{t:"plyometrics و تقویت پا",p:3},{t:"مصرف مکمل",p:0},{t:"هیچ",p:0}]},
+        {q:"نحوهٔ خواندن بلوک چیست؟", a:[{t:"حدس زدن",p:0},{t:"مطالعه الگوها و زمان‌بندی",p:3},{t:"فقط قدرت",p:0},{t:"بی‌معنی",p:1}]},
+        {q:"چه زمانی از ست کوتاه استفاده می‌شود؟", a:[{t:"برای اغتشاش در دفاع حریف",p:3},{t:"همیشه",p:0},{t:"هیچ‌گاه",p:0},{t:"برای سرویس",p:1}]},
+        {q:"نقش لیبро در دفاع چیست؟", a:[{t:"پوشش فضا و هدایت دریافت",p:3},{t:"ایجاد حمله",p:0},{t:"فقط ذخیره",p:1},{t:"هیچ",p:0}]},
+        {q:"حضور لیبرو چه محدودیتی دارد؟", a:[{t:"ندارد",p:0},{t:"نمی‌تواند اسپایک کند و در مناطق دفاعی موثر است",p:3},{t:"محدود به سرویس",p:1},{t:"محدود به حمله",p:0}]},
+        {q:"انتخاب ترکیب در ست پنجم چرا مهم است؟", a:[{t:"بی‌اهمیت",p:0},{t:"برای حفظ انرژی و تاکتیک حیاتی است",p:3},{t:"فقط برای تعویض",p:1},{t:"هیچ",p:0}]}
+      ],
+      hard:[
+        {q:"third tempo یعنی چه؟", a:[{t:"فقط قدرت",p:0},{t:"زمان‌بندی پاس برای شکست بلوک",p:3},{t:"تعویض بازیکن",p:0},{t:"پاس بلند",p:1}]},
+        {q:"آنالیز لیبرو چه پارامترهایی دارد؟", a:[{t:"فقط تعداد دریافت",p:0},{t:"نرخ دریافت موفق و دقت پاس",p:3},{t:"قد",p:1},{t:"وزن",p:0}]},
+        {q:"زاویهٔ حمله چطور روی عبور از بلوک تأثیر دارد؟", a:[{t:"کم تأثیر",p:1},{t:"زاویه و اسپین تعیین‌کننده هستند",p:3},{t:"بی‌تأثیر",p:0},{t:"تنها قدرت مهم است",p:0}]},
+        {q:"چگونه از داده‌ها برای شناخت بلوک استفاده می‌کنید؟", a:[{t:"حدس",p:0},{t:"تحلیل نقاط تمرکز و تغییر توزیع پاس",p:3},{t:"تعویض",p:0},{t:"افزایش تمرین",p:1}]},
+        {q:"پیشگیری از آسیب شانه چطور انجام می‌شود؟", a:[{t:"کشش فقط",p:1},{t:"تقویت روتاتورکاف و تکنیک",p:3},{t:"مصرف دارو",p:0},{t:"هیچ",p:0}]},
+        {q:"تأثیر خستگی بر واکنش چیست؟", a:[{t:"کم شدن دقت و سرعت واکنش",p:3},{t:"افزایش دقت",p:0},{t:"بی‌اثر",p:1},{t:"پایدار شدن",p:0}]},
+        {q:"شاخص‌های سرویس-ریسیو چیست؟", a:[{t:"فقط سرعت سرویس",p:0},{t:"دقت سرویس و توزیع توپ",p:3},{t:"قد سرویس‌زن",p:0},{t:"رنگ توپ",p:0}]},
+        {q:"استراتژی ست پنجم در تورنمنت چیست؟", a:[{t:"افزایش شدت",p:0},{t:"چرخش بازیکنان و مدیریت بازیابی",p:3},{t:"کاهش تلاش",p:0},{t:"تعویض مکرر",p:1}]},
+        {q:"مقابله با لیبرو قوی چگونه است؟", a:[{t:"افزایش حملات مستقیم",p:1},{t:"تنوع ضربات و زوایا",p:3},{t:"دوری از حمله",p:0},{t:"تعویض لیبرو",p:0}]},
+        {q:"برنامهٔ اوج‌گیری برای مسابقات چیست؟", a:[{t:"دو برابر تمرین",p:0},{t:"پریودایزیشن و بازیابی",p:3},{t:"استراحت کامل",p:1},{t:"مصرف مکمل",p:0}]}
+      ]
+    }
   },
-
-  fun:{
-    title:"تست شخصیت فان",
-    sub:"پاسخ‌ها بامزه و نتیجه‌ها خنده‌دار هستند",
-    categories:["online","sleeper","foodie","survivor"],
-    catNames:{
-      online:"انسان آنلاین 📱",
-      sleeper:"قهرمان خواب 😴",
-      foodie:"خوراکی‌پرست 🥣",
-      survivor:"فقط زنده‌ام 😂"
-    },
-    questions:[
-      {q:"اولین کاری که صبح می‌کنی چیه؟", a:[
-        {t:"گوشی رو چک می‌کنم",c:"online"},
-        {t:"نمی‌خوام بیدار شم",c:"sleeper"},
-        {t:"صبحونه می‌خورم",c:"foodie"},
-        {t:"فقط تلاش می‌کنم از تخت بلند شم",c:"survivor"}]},
-      {q:"نوشیدنی مورد علاقه؟", a:[
-        {t:"قهوه و نوتیفیکیشن",c:"online"},
-        {t:"هرچیزی که خوابمو تضمین کنه",c:"sleeper"},
-        {t:"شیرینی و دسر",c:"foodie"},
-        {t:"هر چیزی که سریع آماده بشه",c:"survivor"}]},
-      {q:"برای بیرون رفتن اول چی می‌پوشی؟", a:[
-        {t:"لباس مناسب برای عکس گرفتن",c:"online"},
-        {t:"هرچی راحت باشه",c:"sleeper"},
-        {t:"تمیز و خوشبو",c:"foodie"},
-        {t:"راحت و زود‌پوش",c:"survivor"}]},
-      {q:"تفریح آخر هفته؟", a:[
-        {t:"وبگردی و گشت‌وگذار",c:"online"},
-        {t:"خواب طولانی",c:"sleeper"},
-        {t:"خوردن فست‌فودهای مختلف",c:"foodie"},
-        {t:"یک ماجراجویی ساده",c:"survivor"}]},
-      {q:"وقتی گرسنه می‌شی؟", a:[
-        {t:"به دنبال عکس‌های غذا در اینستا",c:"online"},
-        {t:"نمی‌فهمم کی گرسنه شدم",c:"sleeper"},
-        {t:"پلان غذا تهیه می‌کنم",c:"foodie"},
-        {t:"هر چی دم دست باشه می‌خورم",c:"survivor"}]},
-      {q:"در جمع حرف اول رو می‌زنی؟", a:[
-        {t:"با استوری و محتوا",c:"online"},
-        {t:"نیم‌خواب و گوشه‌گیر",c:"sleeper"},
-        {t:"در مورد غذاها حرف می‌زنم",c:"foodie"},
-        {t:"صرفاً حضور دارم",c:"survivor"}]},
-      {q:"واکنشت به شوخی؟", a:[
-        {t:"میم می‌فرستم",c:"online"},
-        {t:"ممکنه نخندم و خوابم ببره",c:"sleeper"},
-        {t:"با غذا جایزه میدم",c:"foodie"},
-        {t:"لقب جدید می‌گیرم",c:"survivor"}]},
-      {q:"شب قبل از خواب؟", a:[
-        {t:"تا دیروقت آنلاینم",c:"online"},
-        {t:"زود می‌خوابم",c:"sleeper"},
-        {t:"برنامهٔ غذایی فردا رو چک می‌کنم",c:"foodie"},
-        {t:"فقط امیدوارم فردا بهتر باشه",c:"survivor"}]},
-      {q:"استرس چجوری رفع می‌کنی؟", a:[
-        {t:"چَک کردن فیدها",c:"online"},
-        {t:"چرت کوتاه",c:"sleeper"},
-        {t:"یک وعده خوب",c:"foodie"},
-        {t:"خلاصه و سریع ازش می‌گذرم",c:"survivor"}]},
-      {q:"وقتی کسی می‌پرسه روحیاتت چیه؟", a:[
-        {t:"حاضر به اشتراک گذاری آنلاین",c:"online"},
-        {t:"به خواب فکر می‌کنم",c:"sleeper"},
-        {t:"به غذا فکر می‌کنم",c:"foodie"},
-        {t:"فقط می‌خوام زنده بمونم",c:"survivor"}]},
-    ]
+  basketball: { title:"بسکتبال",
+    levels:{
+      easy:[
+        {q:"تعداد بازیکن هر تیم در زمین چند نفر است؟", a:[{t:"۴",p:0},{t:"۵",p:3},{t:"۶",p:1},{t:"۷",p:0}]},
+        {q:"سه امتیازی زمانی محاسبه می‌شود که؟", a:[{t:"هر زمان",p:0},{t:"پرتاب از پشت خط سه",p:3},{t:"فقط در پایان بازی",p:0},{t:"وقتی بازیکن بلندقد است",p:1}]},
+        {q:"دریبل چیست؟", a:[{t:"پاس",p:0},{t:"زدن توپ به زمین هنگام حرکت",p:3},{t:"پریدن",p:0},{t:"ایستادن",p:1}]},
+        {q:"ریباند به چه معناست؟", a:[{t:"پاس",p:0},{t:"گرفتن توپ بعد از شوت ناموفق",p:3},{t:"پرش",p:0},{t:"تعویض",p:1}]},
+        {q:"کوارترها معمولاً چند دقیقه‌اند؟", a:[{t:"۱۰ تا ۱۲ دقیقه",p:3},{t:"۲۰ دقیقه",p:0},{t:"۵ دقیقه",p:0},{t:"۳۰ دقیقه",p:0}]},
+        {q:"شوت آزاد چیست؟", a:[{t:"شوت از فاصله",p:0},{t:"پرتاب بدون دفاع از خط پنالتی",p:3},{t:"شوت سه امتیازی",p:0},{t:"پاس",p:1}]},
+        {q:"دفاع منطقه‌ای چیست؟", a:[{t:"هر بازیکن منطقه‌ای را می‌پوشاند",p:3},{t:"هر بازیکن بازیکن مشخص",p:0},{t:"نوعی حمله",p:0},{t:"فقط در تمرین",p:1}]},
+        {q:"خطای تیمی چه اثری دارد؟", a:[{t:"پس از تعداد مشخص، پرتاب آزاد به حریف داده می‌شود",p:3},{t:"هیچ",p:0},{t:"تعویض اجباری",p:1},{t:"کاهش امتیاز",p:0}]},
+        {q:"تعویض‌ها چگونه‌اند؟", a:[{t:"غیرمحدود در طول بازی",p:3},{t:"فقط یکبار",p:0},{t:"محدود",p:1},{t:"ندارد",p:0}]},
+        {q:"هدف اصلی بازی چیست؟", a:[{t:"کسب امتیاز از طریق سبد",p:3},{t:"دوندگی",p:0},{t:"فقط دفاع",p:0},{t:"هیچ",p:1}]}
+      ],
+      medium:[
+        {q:"تعریف pick-and-roll چیست؟", a:[{t:"اسکرین و رول برای ایجاد فرصت",p:3},{t:"تعویض سریع",p:0},{t:"فقط دفاع",p:0},{t:"پاس دادن",p:1}]},
+        {q:"نقش پوینت‌گارد چیست؟", a:[{t:"هدایت هجومی و توزیع توپ",p:3},{t:"فقط شوت‌زن",p:0},{t:"فقط دفاع",p:0},{t:"تعویض",p:1}]},
+        {q:"اهمیت ریباند تهاجمی چیست؟", a:[{t:"فرصت‌های اضافی گل",p:3},{t:"بی‌اهمیت",p:0},{t:"کاهش زمان",p:1},{t:"تنها برای بلندقدها",p:0}]},
+        {q:"efficiency بازیکن شامل چه مواردی است؟", a:[{t:"امتیاز، ریباند، پاس گل و بلاک",p:3},{t:"فقط امتیاز",p:0},{t:"قد",p:1},{t:"وزن",p:0}]},
+        {q:"حملهٔ سریع چگونه موثر است؟", a:[{t:"پاس سریع و خواندن فضا",p:3},{t:"دویدن سریع",p:1},{t:"هیچ",p:0},{t:"فقط شوت",p:0}]},
+        {q:"تفاوت دفاع فردی و منطقه‌ای چیست؟", a:[{t:"man-to-man دفاع فردی، zone پوشش منطقه",p:3},{t:"هر دو یکی",p:0},{t:"منطقه‌ای همیشه بهتر است",p:1},{t:"بی‌معنی است",p:0}]},
+        {q:"نقش دفاع کمک‌کننده چیست؟", a:[{t:"پوشش فضا و کمک به هم‌تیمی",p:3},{t:"هیچ",p:0},{t:"فقط فریاد",p:1},{t:"کاهش حمله",p:0}]},
+        {q:"نحوهٔ افزایش دقت شوت آزاد چیست؟", a:[{t:"روال قبل از پرتاب و تمرین",p:3},{t:"فقط تمرین بدنسازی",p:0},{t:"مصرف مکمل",p:1},{t:"افزایش قدرت",p:0}]},
+        {q:"اهمیت انتخاب lineup چیست؟", a:[{t:"تعیین ترکیب مناسب بر اساس matchup",p:3},{t:"بی‌اهمیت",p:0},{t:"فقط براساس قد",p:1},{t:"فقط سلیقه",p:0}]},
+        {q:"چطور مقابل مهاجم سرعتی دفاع کنیم؟", a:[{t:"کمک دفاعی و پوشش فضا",p:3},{t:"تعویض مکرر",p:1},{t:"فقط ایستادن",p:0},{t:"فقط فریاد",p:0}]}
+      ],
+      hard:[
+        {q:"plus-minus چه چیزی را نشان می‌دهد؟", a:[{t:"تأثیر خالص بازیکن بر اختلاف امتیاز",p:3},{t:"فقط امتیاز بازیکن",p:0},{t:"قد بازیکن",p:1},{t:"محاسبه ساده",p:0}]},
+        {q:"برنامهٔ strength-power برای سنتر چیست؟", a:[{t:"تمرینات انفجاری و قدرت پایه",p:3},{t:"فقط دویدن",p:0},{t:"فقط وزنه‌زدن",p:1},{t:"هیچ",p:0}]},
+        {q:"آنالیز فیلم چگونه به شناخت حریف کمک می‌کند؟", a:[{t:"استخراج نقاط شوت و الگو",p:3},{t:"فقط تماشا",p:0},{t:"بی‌فایده",p:1},{t:"تغییر لباس",p:0}]},
+        {q:"VO2max و آستانه لاکتات چه کاربردی دارند؟", a:[{t:"سنجش استقامت و توان در شدت بالا",p:3},{t:"فقط برای دونده",p:0},{t:"بی‌اهمیت",p:1},{t:"مربوط به تغذیه",p:0}]},
+        {q:"دفاع در پیک‌اند-رول چه تاکتیک‌هایی نیاز دارد؟", a:[{t:"switch، hedge و ICE بسته به matchup",p:3},{t:"فقط ماندن",p:0},{t:"تعویض ناگهانی",p:1},{t:"نادیده گرفتن",p:0}]},
+        {q:"analytics در تعیین lineup چه نقشی دارد؟", a:[{t:"کشف ترکیب‌های هم‌افزا و matchup مناسب",p:3},{t:"فقط آمار ساده",p:0},{t:"بی‌اثر",p:1},{t:"فقط رنگ لباس",p:0}]},
+        {q:"ریکاوری بین بازی‌ها شامل چه چیزهایی است؟", a:[{t:"خواب، تغذیه و ماساژ",p:3},{t:"مصرف دارو",p:0},{t:"استراحت کامل",p:1},{t:"نادیده گرفتن",p:0}]},
+        {q:"تفاوت ایزوله و چندمفصلی چیست؟", a:[{t:"ایزوله برای یک عضله، چندمفصلی برای عملکرد هماهنگ",p:3},{t:"هیچ فرق",p:0},{t:"ایزوله همیشه بهتر",p:1},{t:"بی‌معنی",p:0}]},
+        {q:"شبیه‌سازی موقعیت چگونه کمک می‌کند؟", a:[{t:"تقویت واکنش تحت فشار",p:3},{t:"فقط بازی کردن",p:1},{t:"کاهش عملکرد",p:0},{t:"افزایش استرس",p:0}]},
+        {q:"چگونه خطاهای تیمی را کاهش دهیم؟", a:[{t:"تمرین تمرکز و مدیریت خستگی",p:3},{t:"تعویض مکرر",p:0},{t:"بی‌توجهی",p:1},{t:"مصرف مکمل",p:0}]}
+      ]
+    }
   }
-};
+}; // end sports
 
 /* ===== وضعیت جاری ===== */
-let currentTestKey = null;
-let currentIndex = 0;
-let answers = []; // array of category keys
-let scores = {}; // tally
-let currentGradient = ''; // نگهدارندهٔ گرادینت فعلی
+let current = { sport:null, level:null, index:0, answers:[] };
 
-/* ============ helper: gradient palettes برای هر تست و بین سوال‌ها =========== */
-const gradientPalettes = {
-  gaming:[ ['#0f2027','#203a43','#2c5364'], ['#1f4037','#99f2c8'], ['#232526','#414345'], ['#4b6cb7','#182848'] ],
-  animal:[ ['#f7b733','#fc4a1a'], ['#00b09b','#96c93d'], ['#6441a5','#2a0845'], ['#c0c0aa','#1cefff'] ],
-  color:[ ['#2193b0','#6dd5ed'], ['#ee9ca7','#ffdde1'], ['#43e97b','#38f9d7'], ['#f7971e','#ffd200'] ],
-  fun:[ ['#ff9a9e','#fad0c4'], ['#a18cd1','#fbc2eb'], ['#fbc2eb','#a6c1ee'], ['#fddb92','#d1fdff'] ],
-  misc:[ ['#a18cd1','#fbc2eb'], ['#89f7fe','#66a6ff'], ['#ff9a9e','#fecfef'], ['#f6d365','#fda085'] ]
+/* ===== المان‌ها ===== */
+const pages = {
+  sport: document.getElementById('page-sport'),
+  level: document.getElementById('page-level'),
+  quiz: document.getElementById('page-quiz'),
+  result: document.getElementById('page-result')
+};
+const elems = {
+  levelTitle: document.getElementById('levelTitle'),
+  levelSub: document.getElementById('levelSub'),
+  startBtn: document.getElementById('startTestBtn'),
+  testTitle: document.getElementById('testTitle'),
+  testSub: document.getElementById('testSub'),
+  questionText: document.getElementById('questionText'),
+  optionsBox: document.getElementById('optionsBox'),
+  progressFill: document.getElementById('progressFill'),
+  resultTitle: document.getElementById('resultTitle'),
+  resultDesc: document.getElementById('resultDesc'),
+  resultExtra: document.getElementById('resultExtra')
 };
 
-function randPalette(key){
-  const arr = gradientPalettes[key] || gradientPalettes.misc;
-  return arr[Math.floor(Math.random()*arr.length)];
+/* ===== رویدادهای اولیه ===== */
+document.querySelectorAll('.sport-card').forEach(card=>card.addEventListener('click', ()=>onChooseSport(card.dataset.key)));
+document.getElementById('btn-last').addEventListener('click', loadLast);
+document.getElementById('btn-help').addEventListener('click', showHelp);
+document.getElementById('backToSportBtn').addEventListener('click', ()=>showPage('sport'));
+document.getElementById('startTestBtn').addEventListener('click', ()=>startTest());
+document.getElementById('btn-backQ').addEventListener('click', onBackQuestion);
+document.getElementById('btn-skipQ').addEventListener('click', onSkipQuestion);
+document.getElementById('btn-share').addEventListener('click', shareResult);
+document.getElementById('btn-restart').addEventListener('click', resetAll);
+document.querySelectorAll('.difficultyBtn').forEach(b=>b.addEventListener('click',(e)=>onSelectDifficulty(e.currentTarget.dataset.level,e.currentTarget)));
+
+/* ===== پس‌زمینه ===== */
+const gradientPalettes = {
+  football:[['#0f2027','#203a43'],['#1f4037','#99f2c8']],
+  wrestling:[['#f7b733','#fc4a1a'],['#00b09b','#96c93d']],
+  volleyball:[['#2193b0','#6dd5ed'],['#ee9ca7','#ffdde1']],
+  basketball:[['#ff9a9e','#fad0c4'],['#a18cd1','#fbc2eb']],
+  misc:[['#a18cd1','#fbc2eb']]
+};
+const bgLayer = document.getElementById('bgLayer'), bgNext = document.getElementById('bgNext');
+function randPalette(key){ const arr = gradientPalettes[key] || gradientPalettes.misc; return arr[Math.floor(Math.random()*arr.length)]; }
+function changeBackgroundSmooth(pair){ if(!pair) pair = randPalette('misc'); const css = `linear-gradient(120deg, ${pair[0]}, ${pair[1]||pair[0]})`; bgNext.style.background = css; bgNext.style.opacity = 0; void bgNext.offsetWidth; bgNext.style.transition = 'opacity 900ms ease'; bgNext.style.opacity = 1; setTimeout(()=>{ bgLayer.style.background = css; bgNext.style.opacity = 0; bgNext.style.transition=''; },920); }
+
+/* ===== flow handlers ===== */
+function showPage(name){
+  Object.values(pages).forEach(p=>p.classList.remove('active'));
+  if(name==='sport') pages.sport.classList.add('active');
+  if(name==='level') pages.level.classList.add('active');
+  if(name==='quiz') pages.quiz.classList.add('active');
+  if(name==='result') pages.result.classList.add('active');
 }
 
-/* ============ UI functions ============ */
-
-function startTest(key){
-  currentTestKey = key;
-  currentIndex = 0;
-  answers = [];
-  scores = {};
-  const test = tests[key];
-  document.getElementById('selectTest').style.display='none';
-  document.getElementById('resultBox').style.display='none';
-  document.getElementById('quizBox').style.display='block';
-  document.getElementById('testTitle').textContent = test.title;
-  document.getElementById('testSub').textContent = test.sub;
-  // set an initial background gradient relevant to test
+/* انتخاب ورزش */
+function onChooseSport(key){
+  current.sport = key;
+  current.level = null;
+  current.index = 0;
+  current.answers = [];
+  elems.levelTitle.textContent = sports[key].title;
+  elems.levelSub.textContent = 'سطح را انتخاب و سپس تست را شروع کنید.';
+  document.querySelectorAll('.difficultyBtn').forEach(b=>b.classList.remove('active'));
+  elems.startBtn.disabled = true;
   changeBackgroundSmooth(randPalette(key));
-  showQuestion(0);
+  showPage('level');
+}
+
+/* انتخاب سطح */
+function onSelectDifficulty(level, btnEl){
+  current.level = level;
+  document.querySelectorAll('.difficultyBtn').forEach(b=>b.classList.remove('active'));
+  btnEl.classList.add('active');
+  elems.startBtn.disabled = false;
+}
+
+/* شروع تست */
+function startTest(){
+  if(!current.sport || !current.level){ alert('ورزش و سطح را انتخاب کنید.'); return; }
+  current.index = 0; current.answers = [];
+  elems.testTitle.textContent = sports[current.sport].title;
+  elems.testSub.textContent = `${sports[current.sport].title} — سطح: ${current.level==='easy'?'آسان':current.level==='medium'?'متوسط':'سخت'}`;
+  changeBackgroundSmooth(randPalette(current.sport));
+  showPage('quiz');
+  renderQuestion();
   updateProgress();
 }
 
-function showQuestion(i){
-  const test = tests[currentTestKey];
-  const q = test.questions[i];
-  const qText = document.getElementById('questionText');
-  const optsBox = document.getElementById('optionsBox');
-
-  // animate question swap
-  const qc = document.getElementById('questionCard');
-  qc.className='anim-leave anim-leave-active';
-  setTimeout(()=>{ // after leave
-    qText.textContent = q.q;
-    optsBox.innerHTML='';
-    q.a.forEach((opt, idx)=>{
-      const d = document.createElement('div');
-      d.className='option';
-      d.tabIndex = 0;
-      d.textContent = opt.t;
-      d.onclick = ()=>selectOption(opt.c, d);
-      d.onkeypress = (e)=>{ if(e.key==='Enter') selectOption(opt.c,d) };
-      optsBox.appendChild(d);
-    });
-    qc.className='anim-enter anim-enter-active';
-    // change background palette for this question (gentle fade)
-    changeBackgroundSmooth(randPalette(currentTestKey));
-  }, 220);
+/* نمایش سوال فعلی */
+function renderQuestion(){
+  const qarr = sports[current.sport].levels[current.level];
+  const qobj = qarr[current.index];
+  if(!qobj){ console.error('سوال یافت نشد', current); return; }
+  elems.questionText.textContent = `${current.index+1}. ${qobj.q}`;
+  elems.optionsBox.innerHTML = '';
+  qobj.a.forEach(opt=>{
+    const d = document.createElement('div');
+    d.className = 'option';
+    d.tabIndex = 0;
+    d.textContent = opt.t;
+    d.onclick = ()=>selectAnswer(opt.p, d);
+    d.onkeypress = (e)=>{ if(e.key==='Enter') selectAnswer(opt.p,d); };
+    elems.optionsBox.appendChild(d);
+  });
 }
 
-function selectOption(cat, elem){
-  // mark selection visually briefly
-  const opts = document.querySelectorAll('.option');
-  opts.forEach(x=>x.classList.remove('selected'));
+/* انتخاب جواب */
+function selectAnswer(points, elem){
+  // visual
+  document.querySelectorAll('.option').forEach(x=>x.classList.remove('selected'));
   elem.classList.add('selected');
-
-  // store answer & update scores
-  answers[currentIndex] = cat;
-  // tally immediately (we'll recalc on showResult)
-  incrementScore(cat);
-
-  // small delay برای دیدن افکت، سپس رفتن به سوال بعد
-  setTimeout(()=>{
-    currentIndex++;
-    updateProgress();
-    if(currentIndex < tests[currentTestKey].questions.length){
-      showQuestion(currentIndex);
-    } else {
-      showResult();
-    }
-  }, 420);
+  current.answers[current.index] = points;
+  // continue after short delay
+  setTimeout(()=>{ current.index++; if(current.index < sports[current.sport].levels[current.level].length) { renderQuestion(); updateProgress(); } else { finishTest(); } }, 320);
 }
 
-function incrementScore(cat){
-  if(!scores[cat]) scores[cat]=0;
-  scores[cat]++;
-}
-
+/* نوار پیشرفت */
 function updateProgress(){
-  const total = tests[currentTestKey].questions.length;
-  const percent = Math.round((currentIndex/total)*100);
-  document.getElementById('progressFill').style.width = percent + '%';
+  const total = sports[current.sport].levels[current.level].length;
+  const pct = Math.round((current.index/total)*100);
+  elems.progressFill.style.width = pct + '%';
 }
 
-/* back & skip */
-function goBack(){
-  if(currentIndex===0){
-    // show selection
-    resetAll();
-    return;
-  }
-  // remove last answer
-  currentIndex = Math.max(0, currentIndex-1);
-  const last = answers[currentIndex];
-  if(last){
-    scores[last] = Math.max(0, (scores[last]||0)-1);
-    answers[currentIndex]=null;
-  }
+/* بازگشت سوال */ 
+function onBackQuestion(){
+  if(current.index===0){ showPage('level'); return; }
+  current.index = Math.max(0, current.index-1);
+  current.answers[current.index] = 0;
+  renderQuestion();
   updateProgress();
-  showQuestion(currentIndex);
 }
 
-function skipQuestion(){
-  // skip without answering (counts as none)
-  currentIndex++;
-  updateProgress();
-  if(currentIndex < tests[currentTestKey].questions.length){
-    showQuestion(currentIndex);
-  } else showResult();
+/* رد سوال */
+function onSkipQuestion(){
+  current.answers[current.index] = 0;
+  current.index++;
+  if(current.index < sports[current.sport].levels[current.level].length){ renderQuestion(); updateProgress(); } else finishTest();
 }
 
-/* ============ نتیجه‌گیری و ذخیره در localStorage ============ */
-function showResult(){
-  // ensure progress shows 100%
-  document.getElementById('progressFill').style.width = '100%';
-  // compute top category
-  const test = tests[currentTestKey];
-  // if scores empty (all skipped) pick random
-  if(Object.keys(scores).length===0){
-    // random pick from categories
-    const arr = test.categories;
-    const pick = arr[Math.floor(Math.random()*arr.length)];
-    scores[pick] = 1;
-  }
-  // find max score
-  let maxScore = -1;
-  let winners = [];
-  for(const k of test.categories){
-    const s = scores[k] || 0;
-    if(s > maxScore){ maxScore = s; winners=[k]; }
-    else if(s === maxScore){ winners.push(k); }
-  }
-  // tie-breaker: random among winners
-  const finalKey = winners[Math.floor(Math.random()*winners.length)];
-  const title = (test.catNames && test.catNames[finalKey]) ? test.catNames[finalKey] : finalKey;
-  // description generation (custom messages)
-  const desc = generateDescription(currentTestKey, finalKey, maxScore);
-
-  // style the result card with a palette based on finalKey
-  const palette = randPalette(currentTestKey);
-  const g = `linear-gradient(90deg, ${palette[0]}, ${palette[1] || palette[0]})`;
-  const rCard = document.getElementById('resultCard');
-  rCard.style.background = g;
-
-  document.getElementById('resultTitle').textContent = title;
-  document.getElementById('resultDesc').textContent = desc;
-
-  // hide quiz, show result
-  document.getElementById('quizBox').style.display='none';
-  document.getElementById('resultBox').style.display='block';
-
-  // save to localStorage
-  const entry = {
-    test: currentTestKey,
-    resultKey: finalKey,
-    resultTitle: title,
-    desc,
-    timestamp: new Date().toISOString(),
-    scores
-  };
-  try{
-    const prev = JSON.parse(localStorage.getItem('p_test_results')||'[]');
-    prev.unshift(entry);
-    localStorage.setItem('p_test_results', JSON.stringify(prev.slice(0,20)));
-  }catch(e){
-    console.warn('localStorage issue',e);
-  }
-}
-
-/* generate human description based on test and key */
-function generateDescription(testKey, key, score){
-  const t = tests[testKey];
-  // friendly messages per category
-  const map = {
-    gaming:{
-      aggressive:"تو اهل ریسک و فشار آوردنی — خیلی خوبه که اکشن رو دوست داری. تو معمولاً رهبر حمله‌ای تیمی می‌شی.",
-      strategic:"تو پلیر استراتژیک هستی؛ فکر می‌کنی جلوتر و برنامه‌ریزی‌تری. تیم‌ها به برنامه‌هات اعتماد می‌کنن.",
-      speedy:"سرعت با توست؛ واکنش‌هات سریع و تصمیم‌گیری آنی‌ات عالیه. رکورد و زمان‌بندی دست توعه.",
-      creative:"خلاق و غیرقابل‌پیش‌بینی‌ای — همیشه راه‌حل‌های نوآور پیدا می‌کنی."
-    },
-    animal:{
-      cat:"تو یک گربهٔ باوقار هستی — مستقل، آرام و مرموز.",
-      fox:"روباه زیرکه؛ اهل ترفند و ایده‌های هوشمندانه‌ای.",
-      wolf:"گرگ وفاداری؛ همراه گروه بودن و محافظت برات مهمه.",
-      lion:"شیر مقتدری؛ توان رهبری و اعتماد به نفس بالایی داری."
-    },
-    color:{
-      blue:"آرام و منطقی. تو دوست داری با ثبات باشی و تصمیم‌ها رو با تحلیل بگیری.",
-      red:"پرانرژی و شجاع. دوست داری در مرکز توجه باشی و هیجان رو تجربه کنی.",
-      green:"مهربان و حمایتگر. آرامش و پایداری تو شخصیتی‌ته.",
-      yellow:"خلاق و شاد. انرژی مثبت و ایده‌های بکر از ویژگی‌هاتن."
-    },
-    fun:{
-      online:"تو یک انسان آنلاین هستی — همیشه آپدیت و دنبال محتوا!",
-      sleeper:"قهرمان خواب! استراحت جزئی از هویتته.",
-      foodie:"خوراکی‌پرست حرفه‌ای — غذاها معنای زندگی‌ات رو عوض می‌کنن.",
-      survivor:"فقط زنده‌ام — ساده، چابک و عمل‌گرا."
-    }
-  };
-
-  const base = (map[testKey] && map[testKey][key]) ? map[testKey][key] : 'تو شخصیتی منحصربه‌فرد داری!';
-  return `${base} (${score} امتیاز از انتخاب‌ها).`;
-}
-
-/* share result — کپی متن در کلیپ‌بورد */
-function shareResult(){
-  const title = document.getElementById('resultTitle').textContent;
-  const desc = document.getElementById('resultDesc').textContent;
-  const txt = `نتیجهٔ تست: ${title}\n${desc}\nبا اپ تست شخصیت.`;
-  navigator.clipboard?.writeText(txt).then(()=>{
-    alert('نتیجه کپی شد — الان می‌تونی در چت یا استوری بچسبونی!');
-  }).catch(()=>{ alert('کپی موفق نبود؛ لطفاً دستی کپی کن.') });
-}
-
-/* reset */
-function resetAll(){
-  currentTestKey = null;
-  currentIndex = 0;
-  answers = [];
-  scores = {};
-  document.getElementById('quizBox').style.display='none';
-  document.getElementById('resultBox').style.display='none';
-  document.getElementById('selectTest').style.display='block';
-  // reset background to smooth palette
-  changeBackgroundSmooth(randPalette('misc'));
-}
-
-/* load last result from localStorage */
-function loadLast(){
-  const prev = JSON.parse(localStorage.getItem('p_test_results')||'[]');
-  if(!prev || prev.length===0){ alert('نتیجه‌ای در حافظهٔ مرورگر یافت نشد.'); return; }
-  const last = prev[0];
-  // set UI to show last result
-  currentTestKey = last.test;
-  document.getElementById('selectTest').style.display='none';
-  document.getElementById('quizBox').style.display='none';
-  document.getElementById('resultBox').style.display='block';
-  document.getElementById('resultTitle').textContent = last.resultTitle;
-  document.getElementById('resultDesc').textContent = last.desc;
-  // style
-  const palette = randPalette(last.test);
+/* پایان تست و نتیجه */
+function finishTest(){
+  const arr = sports[current.sport].levels[current.level];
+  const maxPerQ = 3;
+  const maxPoints = arr.length * maxPerQ;
+  const points = current.answers.reduce((s,v)=>s+(v||0),0);
+  const pct = Math.round((points/maxPoints)*100);
+  const label = pct>=85? 'حرفه‌ای': pct>=65? 'خوب': pct>=40? 'متوسط':'آشنایی کم';
+  elems.resultTitle.textContent = `${sports[current.sport].title} — ${label}`;
+  elems.resultDesc.textContent = `درصد آشنایی: ${pct}% — امتیاز ${points} از ${maxPoints}`;
+  elems.resultExtra.textContent = resultAdvice(current.sport, pct);
+  const palette = randPalette(current.sport);
   document.getElementById('resultCard').style.background = `linear-gradient(90deg, ${palette[0]}, ${palette[1]||palette[0]})`;
-  // adjust background a bit
-  changeBackgroundSmooth(randPalette(last.test));
+  showPage('result');
+  // save
+  try{
+    const prev = JSON.parse(localStorage.getItem('sport_test_results')||'[]');
+    prev.unshift({sport:current.sport, level:current.level, percent:pct, points, maxPoints, timestamp:new Date().toISOString()});
+    localStorage.setItem('sport_test_results', JSON.stringify(prev.slice(0,30)));
+  }catch(e){ console.warn(e); }
 }
 
-/* show small help */
-function showHow(){
-  alert('راهنما:\n- هر تست 10 سوال دارد.\n- پس از انتخاب گزینه، به سوال بعد می‌روی.\n- نتیجه در مرورگر ذخیره می‌شود.\n- هر گونه کپی برداری پیگرد قانونی دارد.');
+/* مشاوره بر اساس درصد */
+function resultAdvice(sportKey, pct){
+  const map = {
+    football:{high:"دانش قوی؛ تحلیل مسابقات و تاکتیک‌های پیشرفته را ادامه دهید.",mid:"پایه‌ها را می‌دانید؛ تمرکز بر قوانین و تاکتیک‌ها مفید است.",low:"پایه‌ها را مرور کنید و بازی‌های آموزشی ببینید."},
+    wrestling:{high:"دانش فنی خوبی دارید؛ تمرین تکنیک و بدنسازی را ادامه دهید.",mid:"اصول را می‌دانید؛ تمرین تکنیکی و قوانین را بیشتر کنید.",low:"با مبانی و دیدن مسابقات شروع کنید."},
+    volleyball:{high:"تاکتیک‌ها را می‌فهمید؛ کار روی سرویس و دریافت را ادامه دهید.",mid:"پایه‌ها را دارید؛ نقش پاسور را بیشتر بررسی کنید.",low:"نگرش پایه‌ای به نقش‌ها و قوانین بیاندازید."},
+    basketball:{high:"آمادگی بالایی دارید؛ کار با آنالیز و برنامه تمرینی پیشرفته مفید است.",mid:"پایه‌ها را دارید؛ روی ریباند و pick-and-roll کار کنید.",low:"قوانین و حرکات پایه را مرور کنید."}
+  };
+  const s=map[sportKey]||{high:"",mid:"",low:""};
+  if(pct>=85) return s.high;
+  if(pct>=65) return s.mid;
+  return s.low;
 }
 
-/* ============ پس‌زمینه: تغییر نرم بین گرادینت‌ها ============ */
-/* مکانیزم: bgLayer نمایشگر فعلی؛ bgNext نمایش‌دهندهٔ بعدی با opacity از 0->1؛ سپس swap */
-const bgLayer = document.getElementById('bgLayer');
-const bgNext = document.getElementById('bgNext');
+/* اشتراک‌گذاری و بازنشانی */
+function shareResult(){ const txt = `${elems.resultTitle.textContent}\n${elems.resultDesc.textContent}\n${elems.resultExtra.textContent}`; navigator.clipboard?.writeText(txt).then(()=>alert('نتیجه کپی شد')).catch(()=>alert('کپی نشد')) }
+function resetAll(){ current={sport:null,level:null,index:0,answers:[]}; document.querySelectorAll('.difficultyBtn').forEach(b=>b.classList.remove('active')); elems.startBtn.disabled=true; showPage('sport'); changeBackgroundSmooth(randPalette('misc')); }
 
-function makeGradientCSS(pair){
-  // pair می‌تواند آرایه دو رنگ یا یک رنگ باشه
-  if(!pair) pair = ['#a3d8ff','#ffd6e0'];
-  const [a,b] = pair;
-  return `linear-gradient(120deg, ${a}, ${b})`;
-}
+/* مشاهده آخرین نتیجه */
+function loadLast(){ try{ const prev = JSON.parse(localStorage.getItem('sport_test_results')||'[]'); if(!prev.length){ alert('نتیجه‌ای ذخیره نشده.'); return; } const last = prev[0]; current.sport = last.sport; current.level = last.level; const palette = randPalette(current.sport); document.getElementById('resultCard').style.background = `linear-gradient(90deg, ${palette[0]}, ${palette[1]||palette[0]})`; elems.resultTitle.textContent = `${sports[current.sport].title} — (نتیجه قبلی)`; elems.resultDesc.textContent = `درصد آشنایی: ${last.percent}% — امتیاز ${last.points} از ${last.maxPoints}`; elems.resultExtra.textContent = resultAdvice(current.sport, last.percent); showPage('result'); changeBackgroundSmooth(randPalette(current.sport)); }catch(e){alert('مشکل در خواندن حافظهٔ محلی');console.warn(e)} }
 
-let bgFadeLock = false;
-function changeBackgroundSmooth(pair){
-  if(!pair) pair = randPalette('misc');
-  // اگر قفل شده، سریع اعمال کن اما بدون fade
-  const css = makeGradientCSS(pair);
-  if(bgFadeLock) { bgLayer.style.background = css; return; }
-  // قرار دادن در لایهٔ بعدی و fade کردن opacity
-  bgNext.style.background = css;
-  bgNext.style.opacity = 0;
-  // force reflow
-  void bgNext.offsetWidth;
-  bgNext.style.transition = 'opacity 900ms ease';
-  bgNext.style.opacity = 1;
-  // پس از پایان انیمیشن swap لایه‌ها
-  setTimeout(()=>{
-    bgLayer.style.background = css;
-    bgNext.style.opacity = 0;
-    bgNext.style.transition = '';
-  }, 920);
-}
+/* راهنما */
+function showHelp(){ alert('راهنما:\\n- هر تست شامل ۱۰ سوال است.\\n- هر گزینه امتیازی بین 0 تا 3 دارد (3 بهترین).\\n- پس از پایان درصد آشنایی نمایش داده و ذخیره می‌شود.'); }
 
-/* init small: set a soft initial gradient */
-(function init(){
-  changeBackgroundSmooth(randPalette('misc'));
-})();
+/* init background */
+changeBackgroundSmooth(randPalette('misc'));
 
 </script>
 </body>
