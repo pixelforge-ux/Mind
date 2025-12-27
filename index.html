@@ -2,7 +2,44 @@
 <html lang="fa" dir="rtl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+   <script src="https://developer.eitaa.com/eitaa-web-app.js"></script>
+<script>
+document.addEventListener("DOMContentLoaded", () => {
+  try {
+    if (window.Eitaa && Eitaa.WebApp) {
+      Eitaa.WebApp.ready();
+
+      // تمام صفحه شدن
+      if (Eitaa.WebApp.expand)
+        Eitaa.WebApp.expand();
+
+      // تغییر رنگ هدر به آبی مایل به سفید (ثابت)
+      if (Eitaa.WebApp.setHeaderColor)
+        Eitaa.WebApp.setHeaderColor('#000000');
+
+      // تایید قبل از بستن WebApp
+      if (Eitaa.WebApp.enableClosingConfirmation)
+        Eitaa.WebApp.enableClosingConfirmation();
+
+      // غیرفعال کردن سوایپ عمودی (اگر پشتیبانی شود)
+      if (Eitaa.WebApp.disableVerticalSwipes)
+        Eitaa.WebApp.disableVerticalSwipes();
+
+      // دکمه بک
+      Eitaa.WebApp.onEvent('backButtonClicked', () => {
+        if (history.length > 1) {
+          history.back();
+        } else {
+          Eitaa.WebApp.close();
+        }
+      });
+    }
+  } catch (e) {
+    console.warn(e);
+  }
+});
+</script>
     <title>چهار برگ ایرانی</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@400;700&display=swap" rel="stylesheet">
